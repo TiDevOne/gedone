@@ -11,12 +11,12 @@
 
 <form method="post">
   {% csrf_token %}
-      <script>
+<script>
       // Define a URL do endpoint diretamente no JavaScript
       var urlAtualizarASO = "{% url 'atualizar-aso' %}";
 
       // Inclua aqui o código do seu arquivo JavaScript externo
-  </script>
+</script>
   <!-- Seus outros campos de input vão aqui -->
 </form>
 
@@ -33,7 +33,7 @@
                     </h1>
                 </a>
             </li>
-        
+
             <li class="item-menu" data-target="SincronizarDocumentosForm">
               <a href="#" id="sincronizarDocumentosBtn">
                 <h1>
@@ -50,37 +50,119 @@
                     </h1>
                 </a>
             </li>
+
 <script>
     $(document).ready(function() {
     $('.item-menu[data-target="RessincronizarForm"]').click(function(e) {
         e.preventDefault();  // Impede o comportamento padrão do link
 
+        // Primeira chamada AJAX (comentada)
+        /*
         $.ajax({
             url: "{% url 'documentos_vencidos' %}",  // URL que você definiu para a view
             type: 'GET',  // Tipo da requisição
             success: function(response) {
                 console.log('Documentos processados: ', response.documentos_processados);
                 alert('Documentos processados: ' + response.documentos_processados);
+
+                // Segunda chamada AJAX
+                $.ajax({
+                    url: "{% url 'atualizar_documentos_pendentes' %}",  // URL para atualizar documentos pendentes
+                    type: 'GET',  // Tipo da requisição
+                    success: function(response) {
+                        console.log('Atualização concluída: ', response.status);
+                        alert('Atualização concluída: ' + response.status);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Erro ao atualizar documentos pendentes:', error);
+                        alert('Erro ao atualizar documentos pendentes: ' + error);
+                    }
+                });
             },
             error: function(xhr, status, error) {
                 console.error('Erro ao ressincronizar:', error);
                 alert('Erro ao ressincronizar: ' + error);
             }
         });
+        */
+
+        // Chamada AJAX direta para atualizar documentos pendentes
+        $.ajax({
+            url: "{% url 'atualizar_documentos_pendentes' %}",  // URL para atualizar documentos pendentes
+            type: 'GET',  // Tipo da requisição
+            success: function(response) {
+                console.log('Atualização concluída: ', response.status);
+                alert('Atualização concluída: ' + response.status);
+            },
+            error: function(xhr, status, error) {
+                console.error('Erro ao atualizar documentos pendentes:', error);
+                alert('Erro ao atualizar documentos pendentes: ' + error);
+            }
+        });
     });
 });
 
 </script>
+<li class="item-menu" data-target="AtualizarBancoForm">
+    <a href="#">
+        <h1>
+            <span class="icon"><i class="bi bi-arrow-counterclockwise"></i></span>
+            <span class="txt-link" id="atualizarBancoBtn">Atualizar Banco de Dados</span>
+        </h1>
+    </a>
+</li>
+
+<div id="statusUpdate"></div>
 
 
-            <li class="item-menu" data-target="AtualizarBancoForm">
-                <a href="#">
-                    <h1>
-                        <span class="icon"><i class="bi bi-arrow-counterclockwise"></i></span>
-                        <span class="txt-link">Atualizar Banco de Dados</span>
-                    </h1>
-                </a>
-            </li>
+            <script>
+
+// Função para obter o CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Evento de clique para atualizar o banco de dados
+    document.getElementById('atualizarBancoBtn').addEventListener('click', function(event) {
+        event.preventDefault(); // Prevenir a submissão do formulário
+        fetch("{% url 'atualizar_controle_ponto' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Falha na rede com status: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            document.getElementById('statusUpdate').textContent = data.status;
+        })
+        .catch(error => {
+            console.error('Erro ao atualizar os cartões de ponto:', error);
+            document.getElementById('statusUpdate').textContent = 'Erro ao atualizar: ' + error.message;
+        });
+    });
+});
+</script>
+
+
             <li class="item-menu" data-target="CadastrosBasicosForm">
                 <a href="#">
                     <h1>
@@ -89,19 +171,14 @@
                     </h1>
                 </a>
             </li>
-        
+
             <li class="item-menu2" id="Empresa" data-target="EmpresaForm">
                 <a href="#">
                     <span class="icon"><i class="bi bi-record2-fill"></i></span>
                     <span class="txt-link">Empresa</span>
                 </a>
             </li>
-            <li class="item-menu2" id="Estabelecimento" data-target="EstabelecimentoForm">
-                <a href="#">
-                    <span class="icon"><i class="bi bi-record2-fill"></i></span>
-                    <span class="txt-link">Estabelecimento</span>
-                </a>
-            </li>
+
             <li class="item-menu2" id="Regionais" data-target="RegionaisForm">
                 <a href="#">
                     <span class="icon"><i class="bi bi-record2-fill"></i></span>
@@ -109,12 +186,6 @@
                 </a>
             </li>
 
-            <li class="item-menu2" id="Regiões" data-target="RegiõesForm">
-                <a href="#">
-                    <span class="icon"><i class="bi bi-record2-fill"></i></span>
-                    <span class="txt-link">Regiões</span>
-                </a>
-            </li>
             <li class="item-menu2" id="Unidades" data-target="UnidadesForm">
                 <a href="#">
                     <span class="icon"><i class="bi bi-record2-fill"></i></span>
@@ -125,14 +196,9 @@
                 <a href="#">
                     <span class="icon"><i class="bi bi-record2-fill"></i></span>
                     <span class="txt-link">Áreas</span>
-                </a>
+                    </a>
             </li>
-            <li class="item-menu2" id="Setor" data-target="SetorForm">
-                <a href="#">
-                    <span class="icon"><i class="bi bi-record2-fill"></i></span>
-                    <span class="txt-link">Setor</span>
-                </a>
-            </li>
+
             <li class="item-menu2" id="GruposDocumentos" data-target="GruposDocumentosForm">
                 <a href="#">
                     <span class="icon"><i class="bi bi-record2-fill"></i></span>
@@ -145,60 +211,13 @@
                     <span class="txt-link">Tipo de Documento</span>
                 </a>
             </li>
-            <li class="item-menu2" id="Ocupação" data-target="OcupaçãoForm">
+            <li class="item-menu2" id="Setor" data-target="SetorForm">
                 <a href="#">
                     <span class="icon"><i class="bi bi-record2-fill"></i></span>
                     <span class="txt-link">Ocupação</span>
                 </a>
             </li>
-            <li class="item-menu" data-target="AtualizarBancoForm">
-                <a href="#">
-                    <h1>
-                        <span class="icon"><i class="bi bi-shield-exclamation"></i></span>
-                        <span class="txt-link">Logs de Sincronização</span>
-                    </h1>
-                </a>
-            </li>
-            <li class="item-menu2" id="ErrosDepartamentos" data-target="ErrosDepartamentosForm">
-                <a href="#">
-                    <span class="icon"><i class="bi bi-record2-fill"></i></span>
-                    <span class="txt-link">Erros Departamentos</span>
-                </a>
-            </li>
-            <li class="item-menu2" id="ErrosRH" data-target="ErrosRHForm">
-                <a href="#">
-                    <span class="icon"><i class="bi bi-record2-fill"></i></span>
-                    <span class="txt-link">Erros RH</span>
-                </a>
-            </li>
-            <li class="item-menu" data-target="DocumentosForm">
-                <a href="#">
-                    <h1>
-                        <span class="icon"><i class="bi bi-file-text"></i></span>
-                        <span class="txt-link">Documentos</span>
-                    </h1>
-                </a>
-            </li>
-            <li class="item-menu2" id="ApagarDocumento" data-target="ApagarDocumentoForm">
-                <a href="#">
-                    <span class="icon"><i class="bi bi-record2-fill"></i></span>
-                    <span class="txt-link">Apagar Documentos</span>
-                </a>
-            </li>
-            <li class="item-menu2" id="DocumentosApagados" data-target="DocumentosApagadosForm">
-                <a href="#">
-                    <span class="icon"><i class="bi bi-record2-fill"></i></span>
-                    <span class="txt-link">Documentos Apagados</span>
-                </a>
-            </li>
-            <li class="item-menu" data-target="AtivarADForm">
-                <a href="#">
-                    <h1>
-                        <span class="icon"><i class="bi bi-person-circle"></i></span>
-                        <span class="txt-link">Ativar AD</span>
-                    </h1>
-                </a>
-            </li>
+
             <li class="item-menu" data-target="SegurançaForm">
                 <a href="#">
                     <h1>
@@ -207,16 +226,24 @@
                     </h1>
                 </a>
             </li>
-            <li class="item-menu2" id="usuarios" data-target="usuariosForm">
-                <a href="#">
-                    <span class="icon"><i class="bi bi-record2-fill"></i></span>
-                    <span class="txt-link">Usuarios</span>
-                </a>
-            </li>
+
+            <li class="item-menu2" id="Estabelecimento" data-target="EstabelecimentoForm">
+              <a href="#">
+                  <span class="icon"><i class="bi bi-record2-fill"></i></span>
+                  <span class="txt-link">Usuário</span>
+              </a>
+          </li>
             <li class="item-menu2" id="Permissões" data-target="PermissõesForm">
                 <a href="#">
                     <span class="icon"><i class="bi bi-record2-fill"></i></span>
                     <span class="txt-link">Permissões</span>
+                </a>
+            </li>
+
+            <li class="item-menu2" id="ErrosDepartamentos" data-target="ErrosDepartamentosForm">
+                <a href="#">
+                    <span class="icon"><i class="bi bi-record2-fill"></i></span>
+                    <span class="txt-link">Permissões Departamentos</span>
                 </a>
             </li>
             <li class="item-menu2" id="AlteraSenha" data-target="AlteraSenhaForm">
@@ -227,142 +254,597 @@
             </li>
 
         </ul>
-    </nav>
+</nav>
 
-    <div id="tabelaFuncionariosForm" class="table-container">
-        <table>
-          
-            <thead>
-                <div>
-                    <h1>FUNCIONÁRIOS</h1>
-                </div>
-                <div class="subheader3">
-                    
-                        <button id="abrirFormulario"><i class="bi bi-plus-circle-dotted"></i></button>
-                        <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
-                   
-                        <select id="numLinhas" name="numLinhas">
-                          <option value="" disabled selected hidden> NºLinhas</option>
-                          <option value="8">8</option>
-                          <option value="10">10</option>
-                          <option value="15">15</option>
-                          <option value="20">20</option>
-                          <option value="40">40</option>
-                          <option value="100">100</option>
-                      </select>
-                      
-                    
-                    <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
+<div id="tabelaFuncionariosForm" class="table-container">
+    <table>
+
+
+            <div>
+                <h1>FUNCIONÁRIOS</h1>
+            </div>
+            <div class="subheader3">
+
+                    <button id="abrirFormularioFuncionario"><i class="bi bi-plus-circle-dotted"></i></button>
+                    <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
+
+                    <select id="numLinhas" name="numLinhas">
+                      <option value="" disabled selected hidden> NºLinhas</option>
+                      <option value="8">8</option>
+                      <option value="10">10</option>
+                      <option value="15">15</option>
+                      <option value="20">20</option>
+                      <option value="40">40</option>
+                      <option value="100">100</option>
+                  </select>
+
+
+                    <select id="exportFormat">
+                        <option value="xlsx">Exportar para XLSX</option>
+                        <option value="csv">Exportar para CSV</option>
+                        <option value="pdf">Exportar para PDF</option>
+                    </select>
+                    <button id="exportButton" class="download-button">
+                        <i class="bi bi-download"></i>
+                    </button>
+
+
+
               </div>
-            <tr>
-              <th>Unidade</th>
-              <th>Matricula</th>
-              <th>Nome</th>
-              <th>Cargo</th>
-              <th>Admissão</th>
-              <th>Situação</th>
-              <th>Desligamento</th>
-              <th>Editar</th>
-              <th>remover</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-          </tbody>
+              <thead>
+              <tr>
+                <th>Unidade</th>
+                <th>Matricula</th>
+                <th>Nome</th>
+                <th>Cargo</th>
+                <th>Admissão</th>
+                <th>Desligamento</th>
+                <th>Editar</th>
+                <th>Remover</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaFuncionario">
+                <!-- Linhas da tabela serão inseridas aqui -->
+            </tbody>
         </table>
+        <div id="pagination">
+          <button id="prevPage">Anterior</button>
+          <span id="currentPage">1</span>
+          <button id="nextPage">Próxima</button>
+      </div>
+</div>
+
+<script>
+   document.addEventListener('DOMContentLoaded', function() {
+// Seletor do botão de exportação
+const exportButton = document.getElementById('exportButton');
+
+// Adiciona um evento de clique ao botão de exportação
+exportButton.addEventListener('click', function() {
+    // Chama a função authenticateDownload com o valor do exportFormat
+    authenticateDownload(document.getElementById('exportFormat').value);
+});
+
+// Função para autenticar o download
+function authenticateDownload(format) {
+    // Aqui, você pode implementar qualquer lógica de autenticação necessária.
+    switch (format) {
+        case 'csv':
+            exportTableToCSV('relatorio.csv');
+            break;
+        case 'xlsx':
+            exportTableToXLSX('relatorio.xlsx');
+            break;
+        case 'pdf':
+            exportTableToPDF('relatorio.pdf');
+            break;
+    }
+}
+
+// Função para exportar a tabela para CSV
+function exportTableToCSV(filename) {
+    var csv = [];
+    var rows = document.querySelectorAll("#tabelaFuncionario tr");
+
+    for (var i = 0; i < rows.length; i++) {
+        var row = [], cols = rows[i].querySelectorAll("td, th");
+
+        for (var j = 0; j < cols.length; j++)
+            row.push('"' + cols[j].innerText + '"');
+
+        csv.push(row.join(","));
+    }
+
+    downloadCSV(csv.join("\n"), filename);
+}
+
+// Função para exportar a tabela para XLSX
+function exportTableToXLSX(filename) {
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.table_to_sheet(document.getElementById('tabelaFuncionario'));
+    XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+
+    // Write the workbook to a file
+    XLSX.writeFile(wb, filename);
+}
+
+// Função para exportar a tabela para PDF
+function exportTableToPDF(filename) {
+    const element = document.getElementById('tabelaFuncionario');
+
+    html2canvas(element).then((canvas) => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF({
+            orientation: 'landscape',
+        });
+        const imgProps= pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(filename);
+    });
+}
+
+// Função para baixar um arquivo CSV
+function downloadCSV(csv, filename) {
+    var csvFile;
+    var downloadLink;
+
+    // CSV file
+    csvFile = new Blob([csv], {type: "text/csv"});
+
+    // Download link
+    downloadLink = document.createElement("a");
+
+    // File name
+    downloadLink.download = filename;
+
+    // Create a link to the file
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+
+    // Hide download link
+    downloadLink.style.display = "none";
+
+    // Add the link to DOM
+    document.body.appendChild(downloadLink);
+
+    // Click download link
+    downloadLink.click();
+
+    // Remove the link from DOM
+    document.body.removeChild(downloadLink);
+}
+});
+
+    </script>
+
+<script>
+  // Variáveis para controlar a página atual e o número de resultados por página
+  let currentPage = 1;
+  const resultsPerPage = 10;
+  let totalResults = 0;
+
+  // Função para buscar e preencher os dados dos funcionários na tabela
+  function carregarFuncionarios(page) {
+      fetch(`{% url 'cadastrar_funcionario' %}?page=${page}`)
+          .then(response => response.json())
+          .then(data => {
+              const tabela = document.getElementById('tabelaFuncionario');
+              tabela.innerHTML = ''; // Limpa as linhas existentes da tabela
+
+              data.data.forEach(funcionario => {
+                  const row = tabela.insertRow();
+                  row.insertCell(0).textContent = funcionario.unidade;
+                  row.insertCell(1).textContent = funcionario.matricula;
+                  row.insertCell(2).textContent = funcionario.nome;
+                  row.insertCell(3).textContent = funcionario.cargo;
+                  row.insertCell(4).textContent = funcionario.admissao;
+                  row.insertCell(5).textContent = funcionario.desligamento;
+
+                  // Coluna de Editar com ícone
+                  const editCell = row.insertCell();
+                  const editIcon = document.createElement('i');
+                  editIcon.classList.add('bi', 'bi-pencil-fill');
+                  editCell.appendChild(editIcon);
+
+                  // Coluna de Remover com ícone
+                  const removeCell = row.insertCell();
+                  const removeIcon = document.createElement('i');
+                  removeIcon.classList.add('bi', 'bi-trash3-fill');
+                  removeIcon.setAttribute('data-matricula', funcionario.matricula); // Adicionando um atributo para identificação
+                  removeCell.appendChild(removeIcon);
+
+                  // Adicionando evento de clique para exclusão
+                  removeIcon.addEventListener('click', function() {
+                      if (confirm('Deseja excluir esse funcionário?')) {
+                          excluirFuncionario(funcionario.matricula, row);
+                      }
+                  });
+              });
+
+              currentPage = page;
+              totalResults = data.num_pages * resultsPerPage;
+          })
+          .catch(error => console.error('Erro ao carregar funcionários:', error));
+  }
+
+  // Função para excluir funcionário
+  function excluirFuncionario(matricula, row) {
+      const csrftoken = getCookie('csrftoken'); // Obter o token CSRF
+
+      fetch(`{% url 'cadastrar_funcionario' %}`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrftoken // Incluir o token CSRF no cabeçalho da requisição
+          },
+          body: JSON.stringify({ id: matricula, excluir: true })
+      })
+      .then(response => {
+          if (response.ok) {
+              row.remove(); // Remove a linha da tabela
+              alert('Funcionário excluído com sucesso!');
+          } else {
+              response.json().then(data => alert(data.mensagem));
+          }
+      })
+      .catch(error => console.error('Erro ao excluir funcionário:', error));
+  }
+
+  // Função para atualizar a página atual e carregar os dados
+  function updatePage(page) {
+      carregarFuncionarios(page);
+      document.getElementById('currentPage').textContent = page;
+  }
+
+  // Função para filtrar as linhas da tabela com base na pesquisa
+  function filtrarTabela() {
+      const input = document.getElementById('pesquisa');
+      const filtro = input.value.toUpperCase();
+      const tabela = document.getElementById('tabelaFuncionario');
+      const linhas = tabela.getElementsByTagName('tr');
+
+      for (let i = 0; i < linhas.length; i++) {
+          const cells = linhas[i].getElementsByTagName('td');
+          let corresponde = false;
+          for (let j = 0; j < cells.length; j++) {
+              const cell = cells[j];
+              if (cell) {
+                  const textoCelula = cell.textContent || cell.innerText;
+                  if (textoCelula.toUpperCase().indexOf(filtro) > -1) {
+                      corresponde = true;
+                      break;
+                  }
+              }
+          }
+          linhas[i].style.display = corresponde ? '' : 'none';
+      }
+  }
+
+  // Evento para carregar a próxima página
+  document.getElementById('nextPage').addEventListener('click', () => {
+      const nextPage = currentPage + 1;
+      if (nextPage <= totalResults / resultsPerPage) {
+          updatePage(nextPage);
+      }
+  });
+
+  // Evento para carregar a página anterior
+  document.getElementById('prevPage').addEventListener('click', () => {
+      const prevPage = currentPage - 1;
+      if (prevPage >= 1) {
+          updatePage(prevPage);
+      }
+  });
+
+  // Evento para filtrar a tabela ao digitar no campo de pesquisa
+  document.getElementById('pesquisa').addEventListener('keyup', filtrarTabela);
+
+  // Carregar a primeira página quando a página for carregada
+  document.addEventListener('DOMContentLoaded', () => {
+      updatePage(1);
+  });
+
+  // Função para obter o token CSRF do cookie
+  function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  }
+</script>
+
+<div id="janelaFuncionario" class="modal" style="display: none;">
+    {% csrf_token %}
+    <div class="modal-content">
+
+      <h1 style="margin-bottom: 10px; padding: 10px;">
+        <span style="font-size: 90%;">Cadastrar Funcionário</span>
+        <span class="fecharFuncionario">&times;</span>
+    </h1>
+    <div class="input-container">
+      <input type="text" id="inputEmpresa" placeholder=" " required>
+      <label for="inputEmpresa">Empresa</label>
+  </div>
+
+  <div class="input-container">
+      <input type="text" id="inputRegional" placeholder=" " required>
+      <label for="inputRegional">Regional</label>
+  </div>
+
+  <div class="input-container">
+      <input type="text" id="inputUnidade" placeholder=" " required>
+      <label for="inputUnidade">Unidade</label>
+  </div>
+
+  <div class="input-container">
+      <input type="text" id="inputMatricula" placeholder=" " required>
+      <label for="inputMatricula">Matricula</label>
+  </div>
+
+  <div class="input-container">
+      <input type="text" id="inputNome" placeholder=" " required>
+      <label for="inputNome">Nome</label>
+  </div>
+
+  <div class="input-container">
+      <select id="selectCargo" name="Cargo" required>
+          <option value="" disabled selected hidden></option>
+          <!-- As opções serão preenchidas dinamicamente com JavaScript -->
+      </select>
+      <label for="selectCargo">Cargo</label>
+  </div>
+
+  <div class="input-container">
+      <input type="date" id="inputAdmissao" placeholder=" " required>
+      <label for="inputAdmissao">Admissão</label>
+  </div>
+
+  <div class="input-container">
+      <input type="text" id="inputCPF" placeholder=" " required>
+      <label for="inputCPF">CPF</label>
+  </div>
+
+  <div class="input-container">
+      <select id="pcdSelect" name="pcdSelect" required>
+          <option value="" disabled selected hidden></option>
+          <option value="sim">SIM</option>
+          <option value="nao">NÃO</option>
+      </select>
+      <label for="pcdSelect">PCD</label>
+  </div>
+
+  <div class="input-container">
+      <select id="situacaoSelect" name="situacaoSelect" required>
+          <option value="" disabled selected hidden></option>
+          <option value="Ativo">Ativo</option>
+          <option value="Inativo">Inativo</option>
+          <option value="Afastado">Afastado</option>
+      </select>
+      <label for="situacaoSelect">Situação</label>
+  </div>
+
+  <div class="input-container">
+      <select id="modopontoSelect" name="modopontoSelect" required>
+          <option value="" disabled selected hidden></option>
+          <option value="BATE-PONTO">BATE-PONTO</option>
+          <option value="NÃO UTILIZA EFETIVIDADE">NÃO UTILIZA EFETIVIDADE</option>
+          <option value="NÃO BATE PONTO">NÃO BATE PONTO</option>
+      </select>
+      <label for="modopontoSelect">Modo Ponto</label>
+  </div>
+  <div class="input-container">
+      <input type="date" id="inputDesligamento" placeholder=" " required>
+      <label for="inputDesligamento">Desligamento</label>
+  </div>
+    <button id="cadastrarFuncionario">Cadastrar</button>
+</div>
+</div>
+
+<script>
+    // Função para formatar a data
+function formatDate(dateString) {
+    // Converter a string de data para um objeto Date
+    var date = new Date(dateString);
+    // Extrair os componentes da data
+    var year = date.getFullYear();
+    var month = ('0' + (date.getMonth() + 1)).slice(-2); // Adicionar 1 ao mês porque janeiro é 0
+    var day = ('0' + date.getDate()).slice(-2);
+    // Formatar a data como 'YYYY-MM-DD'
+    return year + '-' + month + '-' + day;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById("cadastrarFuncionario").addEventListener("click", function() {
+        // Coletar os valores dos campos do formulário, verificando se os elementos existem antes de acessar suas propriedades
+        var empresaInput = document.getElementById("inputEmpresa");
+        var regionalInput = document.getElementById("inputRegional");
+        var unidadeInput = document.getElementById("inputUnidade");
+        var matriculaInput = document.getElementById("inputMatricula");
+        var nomeInput = document.getElementById("inputNome");
+        var cargoSelect = document.getElementById("selectCargo");
+        var admissaoInput = document.getElementById("inputAdmissao");
+        var cpfInput = document.getElementById("inputCPF");
+        var pcdSelect = document.getElementById("pcdSelect");
+        var situacaoSelect = document.getElementById("situacaoSelect");
+        var modopontoSelect = document.getElementById("modopontoSelect");
+        var desligamentoInput = document.getElementById("inputDesligamento");
+
+        // Checa se os elementos existem e então acessa suas propriedades 'value'
+        var empresa = empresaInput ? empresaInput.value : '';
+        var regional = regionalInput ? regionalInput.value : '';
+        var unidade = unidadeInput ? unidadeInput.value : '';
+        var matricula = matriculaInput ? matriculaInput.value : '';
+        var nome = nomeInput ? nomeInput.value : '';
+        var cargo = cargoSelect ? cargoSelect.value : '';
+        var admissao = admissaoInput ? formatDate(admissaoInput.value) : '';
+        var cpf = cpfInput ? cpfInput.value : '';
+        var pcd = pcdSelect ? pcdSelect.value : '';
+        var situacao = situacaoSelect ? situacaoSelect.value : '';
+        var modoponto = modopontoSelect ? modopontoSelect.value : '';
+        var desligamento = desligamentoInput ? formatDate(desligamentoInput.value) : '';
+
+        // Enviar os dados para o servidor via AJAX
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "{% url 'cadastrar_funcionario' %}", true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+
+        // Obter o token CSRF e incluí-lo nos cabeçalhos da solicitação
+        var csrftoken = getCookie('csrftoken');
+        xhr.setRequestHeader('X-CSRFToken', csrftoken);
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                console.log(response); // Exibir a resposta do servidor no console para depuração
+            }
+        };
+
+        var data = JSON.stringify({
+            empresa: empresa,
+            regional: regional,
+            unidade: unidade,
+            matricula: matricula,
+            nome: nome,
+            cargo: cargo,
+            admissao: admissao,
+            cpf: cpf,
+            pcd: pcd,
+            situacao: situacao,
+            modoponto: modoponto,
+            desligamento: desligamento
+        });
+        xhr.send(data);
+    });
+
+    // Função para obter o valor do cookie CSRF
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+
+
+</script>
+
+
+<script>
+    // Função para carregar as opções do select de cargos
+    function carregarCargos() {
+        fetch("{% url 'carregar_cargos' %}")
+            .then(response => response.json())
+            .then(data => {
+                const selectCargo = document.getElementById('selectCargo');
+                selectCargo.innerHTML = ""; // Limpa as opções atuais
+
+                // Adiciona a opção padrão
+                const defaultOption = document.createElement('option');
+                defaultOption.value = "";
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                defaultOption.hidden = true;
+                defaultOption.textContent = "Cargo";
+                selectCargo.appendChild(defaultOption);
+
+                // Filtra os cargos únicos
+                const cargosUnicos = [...new Set(data.map(cargo => cargo.nome))];
+
+                // Adiciona as opções dos cargos únicos
+                cargosUnicos.forEach(cargo => {
+                    const option = document.createElement('option');
+                    option.textContent = cargo; // Define o texto como o nome do cargo
+                    selectCargo.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Erro ao carregar cargos:', error));
+    }
+
+    // Chama a função ao carregar a página
+    window.onload = carregarCargos;
+</script>
+
+<script>
+    // Abre a janela de cadastro de Empresa quando o botão é clicado
+    document.getElementById("abrirFormularioFuncionario").addEventListener("click", function() {
+        document.getElementById("janelaFuncionario").style.display = "block";
+        document.body.appendChild(document.createElement("div")).classList.add("fundo-desfocado"); // Adiciona o fundo desfocado dinamicamente
+    });
+
+    // Fecha a janela de cadastro de Empresa quando o botão de fechar é clicado
+    document.querySelector("#janelaFuncionario .fecharFuncionario").addEventListener("click", function() {
+        document.getElementById("janelaFuncionario").style.display = "none";
+        document.querySelector(".fundo-desfocado").remove(); // Remove o fundo desfocado
+    });
+  </script>
+
+<div id="modalEditarFuncionario" class="modal">
+    <div class="modal-content">
+        <h1 style="margin-bottom: 10px; padding: 10px;">
+            <span style="font-size: 90%;">Editar Funcionário</span>
+            <span class="fechareditFuncionario">&times;</span>
+        </h1>
+        <edit type="text" id="editEmpresa" style="margin-top: 10px;" placeholder="Empresa">
+            <edit type="text" id="editRegional" placeholder="Regional">
+                <edit type="text" id="editUnidade" placeholder="Unidade">
+                    <edit type="text" id="editMatricula" placeholder="Matricula">
+                        <edit type="text" id="editNome" placeholder="Nome">
+                            <select id="selecteditCargo" name="Cargo">
+                                <option value="" disabled selected hidden>Cargo</option>
+                                <!-- As opções serão preenchidas dinamicamente com JavaScript -->
+                            </select>
+                            <edit type="date" id="editAdmissao" placeholder="Admissão">
+                                <edit type="text" id="editCPF" placeholder="CPF">
+                                    <select id="pcdeditSelect" name="pcdSelect">
+                                        <option value="" disabled selected hidden>PCD</option>
+                                        <option value="sim">SIM</option>
+                                        <option value="nao">NÃO</option>
+                                    </select>
+                                    <select id="situacaoeditSelect" name="situacaoeditSelect">
+                                        <option value="" disabled selected hidden>Situação</option>
+                                        <option value="Ativo">Ativo</option>
+                                        <option value="Inativo">Inativo</option>
+                                        <option value="Afastado">Afastado</option>
+                                    </select>
+                                    <select id="modopontoeditSelect" name="modopontoeditSelect">
+                                        <option value="" disabled selected hidden>Modo Ponto</option>
+                                        <option value="BATE-PONTO">BATE-PONTO</option>
+                                        <option value="NÃO UTILIZA EFETIVIDADE">NÃO UTILIZA EFETIVIDADE</option>
+                                        <option value="NÃO BATE PONTO">NÃO BATE PONTO</option>
+                                    </select>
+                                    <edit type="date" id="editDesligamento" placeholder="Desligamento">
+                                        <button id="salvarEdicaoFuncionario">Salvar</button>
     </div>
+</div>
 
-
-    <div id="tabelaEmpresaForm" class="table-container">
-        <table>
-          
-            <thead>
-                <div>
-                    <h1>EMPRESA</h1>
-                </div>
-                <div class="subheader3">
-                    
-                  <button id="abrirFormularioEmpresa"><i class="bi bi-plus-circle-dotted"></i></button>
-                  <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
-             
-                  <select id="numLinhas" name="numLinhas">
-                    <option value="" disabled selected hidden> NºLinhas</option>
+<div id="tabelaEmpresaForm" class="table-container">
+    <table>
+        <thead>
+            <div>
+                <h1>EMPRESA</h1>
+            </div>
+            <div class="subheader3">
+                <button id="abrirFormularioEmpresa"><i class="bi bi-plus-circle-dotted"></i></button>
+                <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
+                <select id="numLinhas" name="numLinhas">
+                    <option value="" disabled selected hidden>Nº Linhas</option>
                     <option value="8">8</option>
                     <option value="10">10</option>
                     <option value="15">15</option>
@@ -370,41 +852,346 @@
                     <option value="40">40</option>
                     <option value="100">100</option>
                 </select>
-                
-              
-              <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
-        </div>
+
+
+                <select id="exportFormat2">
+                    <option value="xlsx">Exportar para XLSX</option>
+                    <option value="csv">Exportar para CSV</option>
+                    <option value="pdf">Exportar para PDF</option>
+                </select>
+                <button id="exportButton2" class="download-button">
+                    <i class="bi bi-download"></i>
+                </button>
+
+
+            </div>
             <tr>
-              <th>Código</th>
-              <th>Razão Social</th>
-              <th>Url</th>
-              <th>Caminho Documento</th>
-              <th>Editar</th>
-              <th>Remover</th>
-              <th></th>
+                <th>Código</th>
+                <th>Razão Social</th>
+                <th>Editar</th>
+                <th>Remover</th>
             </tr>
-          </thead>
-          <tbody id="tabelaEmpresa">
-              <!-- Linhas da tabela serão inseridas aqui -->
-          </tbody>
-      </table>
-  </div>
-    
+        </thead>
+        <tbody id="tabelaEmpresa">
+            <!-- Linhas da tabela serão inseridas aqui -->
+        </tbody>
+    </table>
+</div>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    // Seletor do botão de exportação
+    const exportButton = document.getElementById('exportButton2');
+
+    // Adiciona um evento de clique ao botão de exportação
+    exportButton.addEventListener('click', function() {
+        // Chama a função authenticateDownload com o valor do exportFormat
+        authenticateDownload(document.getElementById('exportFormat2').value);
+    });
+
+    // Função para autenticar o download
+    function authenticateDownload(format) {
+        // Aqui, você pode implementar qualquer lógica de autenticação necessária.
+        switch (format) {
+            case 'csv':
+                exportTableToCSV('relatorio.csv');
+                break;
+            case 'xlsx':
+                exportTableToXLSX('relatorio.xlsx');
+                break;
+            case 'pdf':
+                exportTableToPDF('relatorio.pdf');
+                break;
+        }
+    }
+
+    // Função para exportar a tabela para CSV
+    function exportTableToCSV(filename) {
+        var csv = [];
+        var rows = document.querySelectorAll("#tabelaEmpresa tr");
+
+        for (var i = 0; i < rows.length; i++) {
+            var row = [], cols = rows[i].querySelectorAll("td, th");
+
+            for (var j = 0; j < cols.length; j++)
+                row.push('"' + cols[j].innerText + '"');
+
+            csv.push(row.join(","));
+        }
+
+        downloadCSV(csv.join("\n"), filename);
+    }
+
+    // Função para exportar a tabela para XLSX
+    function exportTableToXLSX(filename) {
+        var wb = XLSX.utils.book_new();
+        var ws = XLSX.utils.table_to_sheet(document.getElementById('tabelaEmpresa'));
+        XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+
+        // Write the workbook to a file
+        XLSX.writeFile(wb, filename);
+    }
+
+    // Função para exportar a tabela para PDF
+    function exportTableToPDF(filename) {
+        const element = document.getElementById('tabelaEmpresa');
+
+        html2canvas(element).then((canvas) => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jspdf.jsPDF({
+                orientation: 'landscape',
+            });
+            const imgProps= pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(filename);
+        });
+    }
+
+    // Função para baixar um arquivo CSV
+    function downloadCSV(csv, filename) {
+        var csvFile;
+        var downloadLink;
+
+        // CSV file
+        csvFile = new Blob([csv], {type: "text/csv"});
+
+        // Download link
+        downloadLink = document.createElement("a");
+
+        // File name
+        downloadLink.download = filename;
+
+        // Create a link to the file
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+
+        // Hide download link
+        downloadLink.style.display = "none";
+
+        // Add the link to DOM
+        document.body.appendChild(downloadLink);
+
+        // Click download link
+        downloadLink.click();
+
+        // Remove the link from DOM
+        document.body.removeChild(downloadLink);
+    }
+});
+
+    </script>
+
+
+  <script>
+    document.addEventListener('DOMContentLoaded', carregarEmpresas);
+
+    function carregarEmpresas() {
+        fetch("{% url 'cadastrar_empresas' %}")
+        .then(response => response.json())
+        .then(data => {
+            const tabela = document.getElementById('tabelaEmpresa');
+            tabela.innerHTML = '';
+            data.forEach(empresa => {
+                const row = tabela.insertRow();
+                adicionaEmpresaNaTabela(empresa, row);
+            });
+        })
+        .catch(error => console.error('Erro ao carregar empresas:', error));
+    }
+
+    function adicionaEmpresaNaTabela(empresa, row) {
+        row.insertCell(0).textContent = empresa.id;
+        row.insertCell(1).textContent = empresa.nome;
+        // Adiciona ícones de editar e excluir
+        adicionaEventoEditar(empresa, row);
+        adicionaEventoExcluir(empresa, row);
+    }
+
+    function adicionaEventoEditar(empresa, row) {
+        const editIcon = document.createElement('i');
+        editIcon.classList.add('bi', 'bi-pencil-fill');
+        editIcon.style.cursor = 'pointer';
+        row.insertCell().appendChild(editIcon);
+        editIcon.addEventListener('click', () => abrirModalEditar(empresa));
+    }
+
+    function adicionaEventoExcluir(empresa, row) {
+        const deleteIcon = document.createElement('i');
+        deleteIcon.classList.add('bi', 'bi-trash3-fill');
+        deleteIcon.style.cursor = 'pointer';
+        row.insertCell().appendChild(deleteIcon);
+        deleteIcon.addEventListener('click', () => excluirEmpresa(empresa.id));
+    }
+
+    function abrirModalEditar(empresa) {
+        document.getElementById('editCodigoEmpresa').value = empresa.id;
+        document.getElementById('editNomeEmpresa').value = empresa.nome;
+        var modal = document.getElementById('modalEditarEmpresa');
+        modal.style.display = 'block';
+        document.querySelector('#modalEditarEmpresa .close').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        document.getElementById('salvarEdicaoEmpresa').onclick = () => salvarEdicaoEmpresa(empresa.id);
+    }
+
+    function salvarEdicaoEmpresa(empresaId) {
+        const codigo = document.getElementById('editCodigoEmpresa').value;
+        const nome = document.getElementById('editNomeEmpresa').value;
+        const data = JSON.stringify({
+            id: empresaId,
+            codigo: codigo, // Supondo que 'codigo' é um campo adicional no modelo Empresa
+            nome: nome
+        });
+
+        fetch("{% url 'cadastrar_empresas' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: data
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Empresa atualizada com sucesso!');
+                document.getElementById('modalEditarEmpresa').style.display = 'none';
+                carregarEmpresas(); // Recarrega a lista para refletir as mudanças
+            } else {
+                response.json().then(data => alert('Erro ao atualizar empresa: ' + data.message));
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao atualizar empresa:', error);
+            alert('Erro ao atualizar empresa. Verifique o console para mais detalhes.');
+        });
+    }
+
+    function excluirEmpresa(empresaId) {
+        if (confirm("Tem certeza que deseja excluir esta empresa?")) {
+            const data = JSON.stringify({
+                id: empresaId,
+                excluir: true // Indica que a empresa deve ser excluída
+            });
+
+            fetch("{% url 'cadastrar_empresas' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: data
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Empresa excluída com sucesso!');
+                    carregarEmpresas(); // Recarrega a lista para refletir as mudanças
+                } else {
+                    alert('Erro ao excluir empresa.');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao excluir empresa:', error);
+                alert('Erro ao excluir empresa. Verifique o console para mais detalhes.');
+            });
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+
+
+
 
   <div id="janelaEmpresa" class="modal" style="display: none;">
     <div class="modal-content">
-    
+
       <h1 style="margin-bottom: 10px; padding: 10px;">
-        <span style="font-size: 90%;">Cadastro Empresa</span> 
+        <span style="font-size: 90%;">Cadastro Empresa</span>
         <span class="fecharEmpresa">&times;</span>
-    </h1>   
-        <input type="text" id="inputCodigo" style="margin-top: 10px;" placeholder="Código">
-        <input type="text" id="inputRazaoSocial" placeholder="Razão Social">
-        <input type="text" id="inputUrl" placeholder="URL">
-        <input type="text" id="inputCaminhoDocumento" placeholder="Caminho Documento">
+    </h1>
+        <div class="input-container">
+        <input type="text" id="inputCodigo" placeholder=" " required>
+        <label for="inputCodigo">Código</label>
+    </div>
+    <div class="input-container">
+        <input type="text" id="inputRazaoSocial" placeholder=" " required>
+        <label for="inputRazaoSocial">Razão Social</label>
+    </div>
         <button id="cadastrarEmpresa">Cadastrar</button>
     </div>
 </div>
+
+
+<!-- Modal de edição  -->
+<div id="modalEditarEmpresa" class="modal">
+  <div class="modal-content">
+    <h1 style="margin-bottom: 10px; padding: 10px; display: flex; justify-content: space-between;">
+      <span style="font-size: 90%;">Empresa</span>
+      <span class="close"style="cursor: pointer;">&times;</span>
+  </h1>
+      <label for="editCodigoEmpresa">Código:
+      <input type="text" id="editCodigoEmpresa" name="editCodigoEmpresa"></label>
+      <label for="editNomeEmpresa">Nome:
+      <input type="text" id="editNomeEmpresa" name="editNomeEmpresa"></label>
+      <button id="salvarEdicaoEmpresa">Salvar</button>
+  </div>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<script>
+  $(document).ready(function() {
+      $('#cadastrarEmpresa').click(function() {
+          // Captura os valores dos inputs
+          var codigo = $('#inputCodigo').val();
+          var razaoSocial = $('#inputRazaoSocial').val();
+
+          // Prepara os dados a serem enviados
+          var dados = JSON.stringify({
+              id: codigo,  // Aqui você passa o código como 'id'
+              nome: razaoSocial  // Aqui você passa a Razão Social como 'nome'
+          });
+
+          // Requisição AJAX para a view 'gerenciar_empresa'
+          $.ajax({
+              url: "{% url 'cadastrar_empresas' %}", // Substitua pelo caminho correto da sua view
+              type: 'POST',
+              contentType: 'application/json',  // Informa que estamos enviando dados em formato JSON
+              data: dados,
+              success: function(response) {
+                  alert('Empresa cadastrada com sucesso!');
+                  console.log(response);
+              },
+              error: function(error) {
+                  console.error('Erro ao cadastrar empresa:', error);
+                  alert('Erro ao cadastrar empresa. Verifique o console para mais detalhes.');
+              }
+          });
+      });
+
+      // Fechar modal ao clicar no 'x'
+      $('.fecharEmpresa').click(function() {
+          $('#janelaEmpresa').hide();
+      });
+  });
+  </script>
 
 <script>
   // Abre a janela de cadastro de Empresa quando o botão é clicado
@@ -412,7 +1199,7 @@
       document.getElementById("janelaEmpresa").style.display = "block";
       document.body.appendChild(document.createElement("div")).classList.add("fundo-desfocado"); // Adiciona o fundo desfocado dinamicamente
   });
-  
+
   // Fecha a janela de cadastro de Empresa quando o botão de fechar é clicado
   document.querySelector("#janelaEmpresa .fecharEmpresa").addEventListener("click", function() {
       document.getElementById("janelaEmpresa").style.display = "none";
@@ -422,18 +1209,19 @@
 
 
 
-    <div id="tabelaEstabelecimentoForm" class="table-container">
+
+<div id="tabelaEstabelecimentoForm" class="table-container">
         <table>
-          
+
             <thead>
                 <div>
-                    <h1>ESTABELECIMENTO</h1>
+                    <h1>Usuário</h1>
                 </div>
                 <div class="subheader3">
-                    
-                  <button id="abrirFormulario"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
+
+                  <button id="abrirFormularioEstabelecimento"><i class="bi bi-plus-circle-dotted"></i></button>
                   <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
-             
+
                   <select id="numLinhas" name="numLinhas">
                     <option value="" disabled selected hidden> NºLinhas</option>
                     <option value="8">8</option>
@@ -443,483 +1231,902 @@
                     <option value="40">40</option>
                     <option value="100">100</option>
                 </select>
-                
-              
+
+
               <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
         </div>
             <tr>
-              <!-- colunas para preencher-->
-            </tr>
-          </thead>
-          <tbody>
-            
-            <!-- linhas para preencher-->
-            
-          </tbody>
-        </table>
-    </div>
-
-
-    <div id="tabelaRegionaisForm" class="table-container">
-        <table>
-          
-            <thead>
-                <div>
-                    <h1>REGIONAIS</h1>
-                </div>
-                <div class="subheader3">
-                    
-                  <button id="abrirFormulario"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
-                  <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
-             
-                  <select id="numLinhas" name="numLinhas">
-                    <option value="" disabled selected hidden> NºLinhas</option>
-                    <option value="8">8</option>
-                    <option value="10">10</option>
-                    <option value="15">15</option>
-                    <option value="20">20</option>
-                    <option value="40">40</option>
-                    <option value="100">100</option>
-                </select>
-                
-              
-              <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
-        </div>
-            <tr>
-              <th>Código</th>
+              <th>Login</th>
               <th>Nome</th>
+              <!--th>Regional</th>
+              <th>Unidade</th-->
+              <th>Ativo</th>
               <th>Editar</th>
               <th>Remover</th>
-              <th></th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
+          <tbody id="tabelaEstabelecimento">
+              <!-- Linhas da tabela serão inseridas aqui -->
           </tbody>
-        </table>
-    </div>
-
-
-    <div id="tabelaRegiõesForm" class="table-container">
-        <table>
-          
-            <thead>
-                <div>
-                    <h1>REGIÕES</h1>
-                </div>
-                <div class="subheader3">
-                    
-                  <button id="abrirFormulario"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
-                  <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
-             
-                  <select id="numLinhas" name="numLinhas">
-                    <option value="" disabled selected hidden> NºLinhas</option>
-                    <option value="8">8</option>
-                    <option value="10">10</option>
-                    <option value="15">15</option>
-                    <option value="20">20</option>
-                    <option value="40">40</option>
-                    <option value="100">100</option>
-                </select>
-                
-              
-              <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
-        </div>
-            <tr>
-              <th>Código</th>
-              <th>Nome</th>
-              <th>Editar</th>
-              <th>Remover</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-    </div>
-
-    <div id="tabelaRegiõesForm" class="table-container">
-        <table>
-          
-            <thead>
-                <div>
-                    <h1>REGIONAIS</h1>
-                </div>
-                <div class="subheader3">
-                    
-                  <button id="abrirFormulario"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
-                  <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
-             
-                  <select id="numLinhas" name="numLinhas">
-                    <option value="" disabled selected hidden> NºLinhas</option>
-                    <option value="8">8</option>
-                    <option value="10">10</option>
-                    <option value="15">15</option>
-                    <option value="20">20</option>
-                    <option value="40">40</option>
-                    <option value="100">100</option>
-                </select>
-                
-              
-              <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
-        </div>
-            <tr>
-              <th>Código</th>
-              <th>Nome</th>
-              <th>Editar</th>
-              <th>Remover</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-            <tr>
-              <td data-label="Unidade"></td>
-              <td data-label="Matricula"></td>
-              <td data-label="Nome"></td>
-              <td data-label="Cargo"></td>
-              <td data-label="Admissão"></td>
-              <td data-label="Situação"></td>
-              <td data-label="Desligamento"></td>
-              <td>
-                <button><i class="bi bi-pencil-fill"></i></button>
-              </td>
-              <td>
-                <button><i class="bi bi-trash3-fill"></i></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-    </div>
-
-
-    <div id="tabelaUnidadesForm" class="table-container">
-      <table>
-        
-          <thead>
-              <div>
-                  <h1>UNIDADES</h1>
-              </div>
-              <div class="subheader3">
-                    
-                <button id="abrirFormulario"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
-                <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
-           
-                <select id="numLinhas" name="numLinhas">
-                  <option value="" disabled selected hidden> NºLinhas</option>
-                  <option value="8">8</option>
-                  <option value="10">10</option>
-                  <option value="15">15</option>
-                  <option value="20">20</option>
-                  <option value="40">40</option>
-                  <option value="100">100</option>
-              </select>
-              
-            
-            <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
-      </div>
-          <tr>
-            <th>Código</th>
-            <th>Nome</th>
-            <th>Editar</th>
-            <th>Remover</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td data-label="Unidade"></td>
-            <td data-label="Matricula"></td>
-            <td data-label="Nome"></td>
-            <td data-label="Cargo"></td>
-            <td data-label="Admissão"></td>
-            <td data-label="Situação"></td>
-            <td data-label="Desligamento"></td>
-            <td>
-              <button><i class="bi bi-pencil-fill"></i></button>
-            </td>
-            <td>
-              <button><i class="bi bi-trash3-fill"></i></button>
-            </td>
-          </tr>
-          
-          <tr>
-            <td data-label="Unidade"></td>
-            <td data-label="Matricula"></td>
-            <td data-label="Nome"></td>
-            <td data-label="Cargo"></td>
-            <td data-label="Admissão"></td>
-            <td data-label="Situação"></td>
-            <td data-label="Desligamento"></td>
-            <td>
-              <button><i class="bi bi-pencil-fill"></i></button>
-            </td>
-            <td>
-              <button><i class="bi bi-trash3-fill"></i></button>
-            </td>
-          </tr>
-          <tr>
-            <td data-label="Unidade"></td>
-            <td data-label="Matricula"></td>
-            <td data-label="Nome"></td>
-            <td data-label="Cargo"></td>
-            <td data-label="Admissão"></td>
-            <td data-label="Situação"></td>
-            <td data-label="Desligamento"></td>
-            <td>
-              <button><i class="bi bi-pencil-fill"></i></button>
-            </td>
-            <td>
-              <button><i class="bi bi-trash3-fill"></i></button>
-            </td>
-          </tr>
-          <tr>
-            <td data-label="Unidade"></td>
-            <td data-label="Matricula"></td>
-            <td data-label="Nome"></td>
-            <td data-label="Cargo"></td>
-            <td data-label="Admissão"></td>
-            <td data-label="Situação"></td>
-            <td data-label="Desligamento"></td>
-            <td>
-              <button><i class="bi bi-pencil-fill"></i></button>
-            </td>
-            <td>
-              <button><i class="bi bi-trash3-fill"></i></button>
-            </td>
-          </tr>
-          <tr>
-            <td data-label="Unidade"></td>
-            <td data-label="Matricula"></td>
-            <td data-label="Nome"></td>
-            <td data-label="Cargo"></td>
-            <td data-label="Admissão"></td>
-            <td data-label="Situação"></td>
-            <td data-label="Desligamento"></td>
-            <td>
-              <button><i class="bi bi-pencil-fill"></i></button>
-            </td>
-            <td>
-              <button><i class="bi bi-trash3-fill"></i></button>
-            </td>
-          </tr>
-        </tbody>
       </table>
+</div>
+
+
+<script>
+$(document).ready(function() {
+    carregarUsuarios();
+
+    function carregarUsuarios() {
+        $.ajax({
+            url: "{% url 'cadastro_usuarios' %}",  // Substitua isso pelo URL correto da sua API
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                var tabela = $('#tabelaEstabelecimento');
+                tabela.empty(); // Limpa a tabela antes de adicionar novos dados
+
+                $.each(data, function(index, usuario) {
+                    var statusAtivo = usuario.is_active ? "Não" : "Sim";  // Converte o valor booleano em "Sim" ou "Não"
+                    var linha = $('<tr>').append(
+                        $('<td>').text(usuario.username),
+                        $('<td>').text(usuario.first_name),
+                        $('<td>').text(statusAtivo),  // Usa a variável statusAtivo aqui
+
+                        // Coluna de Editar com ícone
+                        $('<td>').append($('<i>').addClass('bi bi-pencil-fill').css('cursor', 'pointer').on('click', function() {
+                            editarUsuario(usuario.id);  // Supondo que você tem uma função editarUsuario definida
+                        })),
+                        // Coluna de Excluir com ícone
+                        $('<td>').append($('<i>').addClass('bi bi-trash3-fill').css('cursor', 'pointer').on('click', function() {
+                            deletarUsuario(usuario.id);  // Função para deletar o usuário
+                        }))
+                    );
+
+                    tabela.append(linha);
+                });
+            },
+            error: function(error) {
+                console.log('Erro ao carregar dados:', error);
+            }
+        });
+    }
+
+    function editarUsuario(userId) {
+        // Função para tratar a lógica de edição
+        console.log("Editar usuário com ID:", userId);
+    }
+
+    function deletarUsuario(userId) {
+        // Função para tratar a lógica de exclusão
+        console.log("Deletar usuário com ID:", userId);
+    }
+});
+</script>
+
+<div id="tabelaRegionaisForm" class="table-container">
+    <table>
+
+        <thead>
+            <div>
+                <h1>REGIONAIS</h1>
+            </div>
+            <div class="subheader3">
+
+              <button id="abrirFormularioRegionais"><i class="bi bi-plus-circle-dotted" style="font-size: 30px;"></i></button>
+              <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
+
+              <select id="numLinhas" name="numLinhas">
+                <option value="" disabled selected hidden> NºLinhas</option>
+                <option value="8">8</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="40">40</option>
+                <option value="100">100</option>
+            </select>
+
+
+            <select id="exportFormat3">
+                <option value="xlsx">Exportar para XLSX</option>
+                <option value="csv">Exportar para CSV</option>
+                <option value="pdf">Exportar para PDF</option>
+            </select>
+            <button id="exportButton3" class="download-button">
+                <i class="bi bi-download"></i>
+            </button>
+
+        </div>
+        <tr>
+          <th>Código</th>
+          <th>Nome</th>
+          <th>Editar</th>
+          <th>Remover</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaRegionais">
+          <!-- Linhas da tabela serão inseridas aqui -->
+      </tbody>
+  </table>
+</div>
+
+<div id="janelaRegionais" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h1 style="margin-bottom: 10px; padding: 10px;">
+            <span style="font-size: 90%;">Cadastro de Regionais</span>
+            <span class="fecharRegionais">&times;</span>
+        </h1>
+        <div class="input-container">
+            <select id="selectEmpresa" name="Empresa" required>
+                <option value="" disabled selected hidden></option>
+                <!-- As opções serão preenchidas dinamicamente com JavaScript -->
+            </select>
+            <label for="selectEmpresa">Empresa</label>
+        </div>
+        <div class="input-container">
+            <input type="text" id="inputNomeRegionais" placeholder=" " required>
+            <label for="inputNomeRegionais">Nome</label>
+        </div>
+        <button id="cadastrarRegionais">Cadastrar</button>
+    </div>
+</div>
+
+<div id="modalEditarRegional" class="modal">
+    <div class="modal-content">
+      <h1 style="margin-bottom: 10px; padding: 10px; display: flex; justify-content: space-between;">
+        <span style="font-size: 90%;">Editar Regional</span>
+        <span class="close" style="cursor: pointer;">&times;</span>
+      </h1>
+      <label for="editNomeRegional">Nome:
+      <input type="text" id="editNomeRegional" name="editNomeRegional"></label>
+      <button id="salvarEdicaoRegional">Salvar</button>
+    </div>
   </div>
 
 
-  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+ // Seletor do botão de exportação
+ const exportButton = document.getElementById('exportButton3');
+
+ // Adiciona um evento de clique ao botão de exportação
+ exportButton.addEventListener('click', function() {
+     // Chama a função authenticateDownload com o valor do exportFormat
+     authenticateDownload(document.getElementById('exportFormat3').value);
+ });
+
+ // Função para autenticar o download
+ function authenticateDownload(format) {
+     // Aqui, você pode implementar qualquer lógica de autenticação necessária.
+     switch (format) {
+         case 'csv':
+             exportTableToCSV('relatorio.csv');
+             break;
+         case 'xlsx':
+             exportTableToXLSX('relatorio.xlsx');
+             break;
+         case 'pdf':
+             exportTableToPDF('relatorio.pdf');
+             break;
+     }
+ }
+
+ // Função para exportar a tabela para CSV
+ function exportTableToCSV(filename) {
+     var csv = [];
+     var rows = document.querySelectorAll("#tabelaRegionais tr");
+
+     for (var i = 0; i < rows.length; i++) {
+         var row = [], cols = rows[i].querySelectorAll("td, th");
+
+         for (var j = 0; j < cols.length; j++)
+             row.push('"' + cols[j].innerText + '"');
+
+         csv.push(row.join(","));
+     }
+
+     downloadCSV(csv.join("\n"), filename);
+ }
+
+ // Função para exportar a tabela para XLSX
+ function exportTableToXLSX(filename) {
+     var wb = XLSX.utils.book_new();
+     var ws = XLSX.utils.table_to_sheet(document.getElementById('tabelaRegionais'));
+     XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+
+     // Write the workbook to a file
+     XLSX.writeFile(wb, filename);
+ }
+
+ // Função para exportar a tabela para PDF
+ function exportTableToPDF(filename) {
+     const element = document.getElementById('tabelaRegionais');
+
+     html2canvas(element).then((canvas) => {
+         const imgData = canvas.toDataURL('image/png');
+         const pdf = new jspdf.jsPDF({
+             orientation: 'landscape',
+         });
+         const imgProps= pdf.getImageProperties(imgData);
+         const pdfWidth = pdf.internal.pageSize.getWidth();
+         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+         pdf.save(filename);
+     });
+ }
+
+ // Função para baixar um arquivo CSV
+ function downloadCSV(csv, filename) {
+     var csvFile;
+     var downloadLink;
+
+     // CSV file
+     csvFile = new Blob([csv], {type: "text/csv"});
+
+     // Download link
+     downloadLink = document.createElement("a");
+
+     // File name
+     downloadLink.download = filename;
+
+     // Create a link to the file
+     downloadLink.href = window.URL.createObjectURL(csvFile);
+
+     // Hide download link
+     downloadLink.style.display = "none";
+
+     // Add the link to DOM
+     document.body.appendChild(downloadLink);
+
+     // Click download link
+     downloadLink.click();
+
+     // Remove the link from DOM
+     document.body.removeChild(downloadLink);
+ }
+});
+
+     </script>
+
+  <script>
+    // Abre a janela de cadastro de Empresa quando o botão é clicado
+    document.getElementById("abrirFormularioRegionais").addEventListener("click", function() {
+        document.getElementById("janelaRegionais").style.display = "block";
+        document.body.appendChild(document.createElement("div")).classList.add("fundo-desfocado"); // Adiciona o fundo desfocado dinamicamente
+    });
+
+    // Fecha a janela de cadastro de Empresa quando o botão de fechar é clicado
+    document.querySelector("#janelaRegionais .fecharRegionais").addEventListener("click", function() {
+        document.getElementById("janelaRegionais").style.display = "none";
+        document.querySelector(".fundo-desfocado").remove(); // Remove o fundo desfocado
+    });
+    </script>
+
+<script>
+// Função para buscar e preencher os dados das regionais na tabela
+function carregarRegionais() {
+    fetch("{% url 'cadastrar_regionais' %}")
+    .then(response => response.json())
+        .then(data => {
+            const tabela = document.getElementById('tabelaRegionais');
+            tabela.innerHTML = ''; // Limpa as linhas existentes da tabela
+
+            // Usando um conjunto para garantir que cada nome seja adicionado apenas uma vez
+            const nomesUnicos = new Set();
+
+            data.forEach(regional => {
+                // Verifica se o nome já foi adicionado
+                if (!nomesUnicos.has(regional.nome)) {
+                    nomesUnicos.add(regional.nome);
+
+                    const row = tabela.insertRow();
+                    row.insertCell(0).textContent = regional.id;
+                    row.insertCell(1).textContent = regional.nome;
+
+                    // Coluna de Editar com ícone
+                    const editCell = row.insertCell();
+                    const editIcon = document.createElement('i');
+                    editIcon.classList.add('bi', 'bi-pencil-fill');
+                    editIcon.dataset.id = regional.id;  // Adiciona o ID da regional ao ícone
+                    editIcon.dataset.nome = regional.nome; // Adiciona o nome da regional ao ícone
+                    editIcon.addEventListener('click', editarRegional); // Adiciona o event listener
+                    editCell.appendChild(editIcon);
+
+                    // Coluna de Remover com ícone
+                    const removeCell = row.insertCell();
+                    const removeIcon = document.createElement('i');
+                    removeIcon.classList.add('bi', 'bi-trash3-fill');
+                    removeIcon.dataset.id = regional.id;  // Adiciona o ID da regional ao ícone
+                    removeIcon.addEventListener('click', excluirRegional); // Adiciona o event listener
+                    removeCell.appendChild(removeIcon);
+                }
+            });
+        })
+        .catch(error => console.error('Erro ao carregar regionais:', error));
+}
+
+// Função para excluir uma regional
+function excluirRegional(event) {
+    const regionalId = event.target.dataset.id;
+    if (confirm('Tem certeza que deseja excluir esta regional?')) {
+        fetch("{% url 'cadastrar_regionais' %}", {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')  // Função para pegar o CSRF token
+            },
+            body: JSON.stringify({ id: regionalId })
+        })
+        .then(response => {
+            if (response.ok) {
+                // Remove a linha da tabela
+                const row = event.target.closest('tr');
+                row.remove();
+            } else {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Erro ao excluir a regional');
+                });
+            }
+        })
+        .catch(error => console.error('Erro ao excluir regional:', error));
+    }
+}
+
+// Função para editar uma regional
+function editarRegional(event) {
+    const modal = document.getElementById('modalEditarRegional');
+    const nomeInput = document.getElementById('editNomeRegional');
+    const regionalId = event.target.dataset.id;
+    const regionalNome = event.target.dataset.nome;
+
+    nomeInput.value = regionalNome;
+    modal.style.display = 'block';
+
+    const salvarButton = document.getElementById('salvarEdicaoRegional');
+    salvarButton.onclick = function() {
+        const novoNome = nomeInput.value;
+        fetch("{% url 'cadastrar_regionais' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')  // Função para pegar o CSRF token
+            },
+            body: JSON.stringify({ id: regionalId, nome: novoNome })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                carregarRegionais(); // Recarrega a tabela
+                modal.style.display = 'none'; // Fecha o modal
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => console.error('Erro ao editar regional:', error));
+    };
+}
+
+// Função para fechar o modal de edição
+document.querySelector('#modalEditarRegional .close').onclick = function() {
+    document.getElementById('modalEditarRegional').style.display = 'none';
+};
+
+// Função para obter o CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Chame a função para carregar regionais quando a página carregar
+document.addEventListener('DOMContentLoaded', carregarRegionais);
+</script>
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Seleciona o botão de cadastro
+    const cadastrarButton = document.getElementById('cadastrarRegionais');
+
+    // Função para carregar as empresas no select
+    function carregarEmpresas() {
+        fetch("{% url 'cadastrar_empresas' %}", {
+            method: 'GET'
+        })
+        .then(response => response.json())
+        .then(data => {
+            const selectEmpresa = document.getElementById('selectEmpresa');
+            selectEmpresa.innerHTML = '';
+            const optionVazia = document.createElement('option');
+            optionVazia.value = '';
+            optionVazia.disabled = true;
+            optionVazia.selected = true;
+            optionVazia.hidden = true;
+            selectEmpresa.appendChild(optionVazia);
+
+            data.forEach(empresa => {
+                const option = document.createElement('option');
+                option.value = empresa.id;
+                option.textContent = empresa.nome;
+                selectEmpresa.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Erro ao carregar empresas:', error));
+    }
+
+    // Função para cadastrar uma nova regional
+    function cadastrarRegional() {
+        const empresaId = document.getElementById('selectEmpresa').value;
+        const nomeRegional = document.getElementById('inputNomeRegionais').value;
+
+        fetch("{% url 'cadastrar_regionais' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')  // Adiciona o token CSRF ao cabeçalho da requisição
+            },
+            body: JSON.stringify({
+                nome: nomeRegional,
+                empresa_id: empresaId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Regional cadastrada com sucesso');
+                // Aqui você pode adicionar código para atualizar a lista de regionais, limpar o formulário, etc.
+            } else {
+                alert(`Erro: ${data.message}`);
+            }
+        })
+        .catch(error => console.error('Erro ao cadastrar regional:', error));
+    }
+
+    // Adiciona o evento de clique ao botão de cadastrar
+    cadastrarButton.addEventListener('click', cadastrarRegional);
+
+    // Carrega as empresas ao carregar a página
+    carregarEmpresas();
+});
+
+// Função para obter o token CSRF do cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+
+<div id="tabelaUnidadesForm" class="table-container">
+    <table>
+
+        <thead>
+            <div>
+                <h1>UNIDADES</h1>
+            </div>
+            <div class="subheader3">
+
+              <button id="abrirFormularioUnidade"><i class="bi bi-plus-circle-dotted"></i></button>
+              <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
+
+              <select id="numLinhas" name="numLinhas">
+                <option value="" disabled selected hidden> NºLinhas</option>
+                <option value="8">8</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="40">40</option>
+                <option value="100">100</option>
+            </select>
+
+
+            <select id="exportFormat4">
+              <option value="xlsx">Exportar para XLSX</option>
+              <option value="csv">Exportar para CSV</option>
+              <option value="pdf">Exportar para PDF</option>
+          </select>
+          <button id="exportButton4" class="download-button">
+              <i class="bi bi-download"></i>
+          </button>
+
+        </div>
+        <tr>
+          <th>Código</th>
+          <th>Nome</th>
+          <th>Editar</th>
+          <th>Remover</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaUnidades">
+          <!-- Linhas da tabela serão inseridas aqui -->
+      </tbody>
+  </table>
+</div>
+
+<div id="janelaUnidade" class="modal" style="display: none;">
+  <div class="modal-content">
+      <h1 style="margin-bottom: 10px; padding: 10px;">
+          <span style="font-size: 90%;">Cadastro de Unidade</span>
+          <span class="fecharUnidade">&times;</span>
+      </h1>
+      <div class="input-container">
+          <select id="selectRegional" name="Regional" required>
+              <option value="" disabled selected hidden></option>
+              <!-- As opções serão preenchidas dinamicamente com JavaScript -->
+          </select>
+          <label for="selectRegional">Regional</label>
+      </div>
+      <div class="input-container">
+          <input type="text" id="inputNomeUnidade" placeholder=" " required>
+          <label for="inputNomeUnidade">Nome</label>
+      </div>
+      <button id="cadastrarUnidade">Cadastrar</button>
+  </div>
+</div>
+
+
+<div id="modalEditarUnidade" class="modal">
+  <div class="modal-content">
+    <h1 style="margin-bottom: 10px; padding: 10px; display: flex; justify-content: space-between;">
+      <span style="font-size: 90%;">Editar Unidade</span>
+      <span class="closeUnidade" style="cursor: pointer;">&times;</span>
+    </h1>
+    <label for="editNomeUnidade">Nome:
+    <input type="text" id="editNomeUnidade" name="editNomeUnidade"></label>
+    <button id="salvarEdicaoUnidade">Salvar</button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+// Seletor do botão de exportação
+const exportButton = document.getElementById('exportButton4');
+
+// Adiciona um evento de clique ao botão de exportação
+exportButton.addEventListener('click', function() {
+   // Chama a função authenticateDownload com o valor do exportFormat
+   authenticateDownload(document.getElementById('exportFormat4').value);
+});
+
+// Função para autenticar o download
+function authenticateDownload(format) {
+   // Aqui, você pode implementar qualquer lógica de autenticação necessária.
+   switch (format) {
+       case 'csv':
+           exportTableToCSV('relatorio.csv');
+           break;
+       case 'xlsx':
+           exportTableToXLSX('relatorio.xlsx');
+           break;
+       case 'pdf':
+           exportTableToPDF('relatorio.pdf');
+           break;
+   }
+}
+
+// Função para exportar a tabela para CSV
+function exportTableToCSV(filename) {
+   var csv = [];
+   var rows = document.querySelectorAll("#tabelaUnidades tr");
+
+   for (var i = 0; i < rows.length; i++) {
+       var row = [], cols = rows[i].querySelectorAll("td, th");
+
+       for (var j = 0; j < cols.length; j++)
+           row.push('"' + cols[j].innerText + '"');
+
+       csv.push(row.join(","));
+   }
+
+   downloadCSV(csv.join("\n"), filename);
+}
+
+// Função para exportar a tabela para XLSX
+function exportTableToXLSX(filename) {
+   var wb = XLSX.utils.book_new();
+   var ws = XLSX.utils.table_to_sheet(document.getElementById('tabelaUnidades'));
+   XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+
+   // Write the workbook to a file
+   XLSX.writeFile(wb, filename);
+}
+
+// Função para exportar a tabela para PDF
+function exportTableToPDF(filename) {
+   const element = document.getElementById('tabelaUnidades');
+
+   html2canvas(element).then((canvas) => {
+       const imgData = canvas.toDataURL('image/png');
+       const pdf = new jspdf.jsPDF({
+           orientation: 'landscape',
+       });
+       const imgProps= pdf.getImageProperties(imgData);
+       const pdfWidth = pdf.internal.pageSize.getWidth();
+       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+       pdf.save(filename);
+   });
+}
+
+// Função para baixar um arquivo CSV
+function downloadCSV(csv, filename) {
+   var csvFile;
+   var downloadLink;
+
+   // CSV file
+   csvFile = new Blob([csv], {type: "text/csv"});
+
+   // Download link
+   downloadLink = document.createElement("a");
+
+   // File name
+   downloadLink.download = filename;
+
+   // Create a link to the file
+   downloadLink.href = window.URL.createObjectURL(csvFile);
+
+   // Hide download link
+   downloadLink.style.display = "none";
+
+   // Add the link to DOM
+   document.body.appendChild(downloadLink);
+
+   // Click download link
+   downloadLink.click();
+
+   // Remove the link from DOM
+   document.body.removeChild(downloadLink);
+}
+});
+
+   </script>
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      fetch("{% url 'cadastrar_unidades' %}?regionais=true")
+          .then(response => response.json())
+          .then(data => {
+              const selectRegional = document.getElementById('selectRegional');
+              const uniqueRegionalNames = new Set();
+
+              data.forEach(regional => {
+                  if (!uniqueRegionalNames.has(regional.nome)) {
+                      uniqueRegionalNames.add(regional.nome);
+                      const option = document.createElement('option');
+                      option.value = regional.id;
+                      option.text = regional.nome;
+                      selectRegional.appendChild(option);
+                  }
+              });
+          })
+          .catch(error => console.error('Error fetching regionais:', error));
+  });
+</script>
+
+
+
+<script>
+  // Abre a janela de cadastro de Empresa quando o botão é clicado
+  document.getElementById("abrirFormularioUnidade").addEventListener("click", function() {
+      document.getElementById("janelaUnidade").style.display = "block";
+      document.body.appendChild(document.createElement("div")).classList.add("fundo-desfocado"); // Adiciona o fundo desfocado dinamicamente
+  });
+
+  // Fecha a janela de cadastro de Empresa quando o botão de fechar é clicado
+  document.querySelector("#janelaUnidade .fecharUnidade").addEventListener("click", function() {
+      document.getElementById("janelaUnidade").style.display = "none";
+      document.querySelector(".fundo-desfocado").remove(); // Remove o fundo desfocado
+  });
+  </script>
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+  document.getElementById('cadastrarUnidade').addEventListener('click', function () {
+      var nomeUnidade = document.getElementById('inputNomeUnidade').value;
+      var regionalId = document.getElementById('selectRegional').value;
+
+      var data = {
+          nome: nomeUnidade,
+          regional_id: regionalId
+      };
+
+      // Envia os dados para o servidor
+      fetch("{% url 'cadastrar_unidades' %}", {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCookie('csrftoken') // Use o token CSRF para proteção contra CSRF
+          },
+          body: JSON.stringify(data)
+      })
+      .then(response => {
+          if (response.ok) {
+              return response.json();
+          }
+          throw new Error('Erro ao cadastrar unidade');
+      })
+      .then(data => {
+          // Aqui você pode tratar a resposta do servidor, como exibir uma mensagem de sucesso para o usuário
+          console.log(data);
+      })
+      .catch(error => {
+          console.error('Erro:', error);
+          // Aqui você pode tratar o erro, como exibir uma mensagem de erro para o usuário
+      });
+  });
+});
+
+// Função para obter o valor do cookie CSRF
+function getCookie(name) {
+  var cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+          var cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+          }
+      }
+  }
+  return cookieValue;
+}
+
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+      // Função para buscar e preencher os dados das unidades na tabela
+      function carregarUnidades(page = 1, pageSize = 8) {
+          fetch("{% url 'cadastrar_unidades' %}")
+          .then(response => response.json())
+          .then(data => {
+              const tabela = document.getElementById('tabelaUnidades');
+              tabela.innerHTML = ''; // Limpa as linhas existentes da tabela
+
+              // Usando um conjunto para garantir que cada nome seja adicionado apenas uma vez
+              const nomesUnicos = new Set();
+
+              data.forEach(unidade => {
+                  // Verifica se o nome já foi adicionado
+                  if (!nomesUnicos.has(unidade.nome)) {
+                      nomesUnicos.add(unidade.nome);
+
+                      const row = tabela.insertRow();
+                      row.insertCell(0).textContent = unidade.id;
+                      row.insertCell(1).textContent = unidade.nome;
+
+                      // Coluna de Editar com ícone
+                      const editCell = row.insertCell();
+                      const editIcon = document.createElement('i');
+                      editIcon.classList.add('bi', 'bi-pencil-fill');
+                      editIcon.style.cursor = 'pointer'; // Altera o cursor para indicar que é clicável
+                      editCell.appendChild(editIcon);
+
+                      // Coluna de Remover com ícone
+                      const removeCell = row.insertCell();
+                      const removeIcon = document.createElement('i');
+                      removeIcon.classList.add('bi', 'bi-trash3-fill');
+                      removeCell.appendChild(removeIcon);
+
+                      // Adiciona um ouvinte de eventos para o clique no ícone de edição
+                      editIcon.addEventListener('click', function() {
+                          // Abre o formulário de edição
+                          document.getElementById('modalEditarUnidade').style.display = 'block';
+
+                          // Preenche o campo de nome com o nome da unidade
+                          document.getElementById('editNomeUnidade').value = unidade.nome;
+
+                          // Define o ID da unidade como um atributo do botão de salvar para acessá-lo posteriormente
+                          document.getElementById('salvarEdicaoUnidade').setAttribute('data-unidade-id', unidade.id);
+                      });
+
+                      // Adiciona um ouvinte de eventos para o clique no ícone de exclusão
+                      removeIcon.addEventListener('click', function() {
+                          const confirmarExclusao = confirm('Tem certeza que deseja excluir esta unidade?');
+                          if (confirmarExclusao) {
+                              const unidadeId = unidade.id;
+                              fetch("{% url 'cadastrar_unidades' %}?id=" + unidadeId, {
+                                  method: 'DELETE',
+                                  headers: {
+                                      'X-CSRFToken': getCookie('csrftoken') // Use o token CSRF para proteção contra CSRF
+                                  }
+                              })
+                              .then(response => {
+                                  if (response.ok) {
+                                      // Remove a linha da tabela se a exclusão for bem-sucedida
+                                      row.remove();
+                                  } else {
+                                      throw new Error('Erro ao excluir unidade');
+                                  }
+                              })
+                              .catch(error => console.error('Erro ao excluir unidade:', error));
+                          }
+                      });
+                  }
+              });
+          })
+          .catch(error => console.error('Erro ao carregar unidades:', error));
+      }
+
+      // Chame a função para carregar unidades quando a página carregar
+      carregarUnidades();
+
+      // Adiciona um ouvinte de eventos para fechar o modal de edição
+      document.getElementsByClassName('closeUnidade')[0].addEventListener('click', function() {
+          document.getElementById('modalEditarUnidade').style.display = 'none';
+      });
+
+      // Adiciona um ouvinte de eventos para salvar as alterações no banco de dados
+      document.getElementById('salvarEdicaoUnidade').addEventListener('click', function() {
+          const unidadeId = this.getAttribute('data-unidade-id');
+          const novoNome = document.getElementById('editNomeUnidade').value;
+
+          // Envie uma solicitação POST para salvar as alterações
+          fetch("{% url 'cadastrar_unidades' %}", {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': getCookie('csrftoken') // Use o token CSRF para proteção contra CSRF
+              },
+              body: JSON.stringify({
+                  id: unidadeId,
+                  nome: novoNome
+              })
+          })
+          .then(response => {
+              if (response.ok) {
+                  // Fecha o modal após o sucesso
+                  document.getElementById('modalEditarUnidade').style.display = 'none';
+                  // Recarrega as unidades para atualizar a tabela
+                  carregarUnidades();
+              } else {
+                  throw new Error('Erro ao salvar alterações na unidade');
+              }
+          })
+          .catch(error => console.error('Erro ao salvar alterações na unidade:', error));
+      });
+  });
+
+  // Função para obter o valor do cookie CSRF
+  function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+              var cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  }
+  </script>
+
 <div id="tabelaÁreasForm" class="table-container">
     <table>
         <div>
@@ -944,7 +2151,7 @@
                 <th>Nome</th>
                 <th>Editar</th>
                 <th>Remover</th>
-                
+
             </tr>
         </thead>
         <tbody id="tabelaCorpo">
@@ -956,7 +2163,7 @@
 <div id="janelaCadastro" class="modal" style="display: none;">
     <div class="modal-content">
       <h1 style="margin-bottom: 10px; padding: 10px;">
-        <span style="font-size: 90%;">Cadastro Área</span> 
+        <span style="font-size: 90%;">Cadastro Área</span>
         <span class="fechar">&times;</span>
     </h1>
         <input type="text" id="inputCodigo" placeholder="Código">
@@ -968,7 +2175,7 @@
 <div id="modalEditar" class="modal">
   <div class="modal-content">
     <h1 style="margin-bottom: 10px; padding: 10px; display: flex; justify-content: space-between;">
-      <span style="font-size: 90%;">Editar Área</span> 
+      <span style="font-size: 90%;">Editar Área</span>
       <span class="close" style="cursor: pointer;">&times;</span>
     </h1>
     <label for="editCodigo">Código:
@@ -1030,7 +2237,7 @@
         var editCodigoInput = document.getElementById("editCodigo");
         var editNomeInput = document.getElementById("editNome");
         editCodigoInput.value = area.codigo;
-        editNomeInput.value = area.nome;  
+        editNomeInput.value = area.nome;
 
         // Exibe o modal de edição
         var modal = document.getElementById("modalEditar");
@@ -1181,17 +2388,16 @@ function carregarAreas() {
 
 <div id="tabelaSetorForm" class="table-container">
   <table>
-    
+
       <thead>
           <div>
-              <h1>SETORES</h1>
+              <h1>OCUPAÇÕES</h1>
           </div>
           <div class="subheader3">
-                    
+
             <button id="abrirFormulario"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
             <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
-       
-            <select id="numLinhas" name="numLinhas">
+          <select id="numLinhas" name="numLinhas">
               <option value="" disabled selected hidden> NºLinhas</option>
               <option value="8">8</option>
               <option value="10">10</option>
@@ -1200,8 +2406,8 @@ function carregarAreas() {
               <option value="40">40</option>
               <option value="100">100</option>
           </select>
-          
-        
+
+
         <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
   </div>
       <tr>
@@ -1212,7 +2418,7 @@ function carregarAreas() {
         <th></th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="tabelaCargos">
       <tr>
         <td data-label="Unidade"></td>
         <td data-label="Matricula"></td>
@@ -1228,7 +2434,7 @@ function carregarAreas() {
           <button><i class="bi bi-trash3-fill"></i></button>
         </td>
       </tr>
-      
+
       <tr>
         <td data-label="Unidade"></td>
         <td data-label="Matricula"></td>
@@ -1293,6 +2499,129 @@ function carregarAreas() {
   </table>
 </div>
 
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    carregarCargos();
+  });
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  const csrftoken = getCookie('csrftoken');
+
+  function carregarCargos() {
+    fetch('{% url "carregar_cargos" %}')
+      .then(response => response.json())
+      .then(data => {
+        console.log("Dados recebidos:", data);
+        const tabelaCargos = document.getElementById('tabelaCargos');
+        tabelaCargos.innerHTML = '';
+        data.forEach(cargo => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${cargo.id}</td>
+            <td>${cargo.nome}</td>
+            <td><button onclick="editarCargo(${cargo.id}, '${cargo.nome}')"><i class="bi bi-pencil-fill"></i></button></td>
+            <td><button onclick="removerCargo(${cargo.id})"><i class="bi bi-trash3-fill"></i></button></td>
+          `;
+          console.log("Adicionando linha:", row.innerHTML);  // Log para verificar a criação da linha
+          tabelaCargos.appendChild(row);
+        });
+      })
+      .catch(error => {
+        console.error("Erro ao carregar cargos:", error);
+      });
+  }
+
+  function cadastrarCargo() {
+    const nome = document.getElementById('nomeCargo').value;
+    fetch('{% url "carregar_cargos" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken
+      },
+      body: JSON.stringify({ nome })
+    })
+    .then(response => response.json())
+    .then(data => {
+      carregarCargos();
+      alert('Cargo cadastrado com sucesso!');
+    })
+    .catch(error => {
+      console.error("Erro ao cadastrar cargo:", error);
+    });
+  }
+
+  function editarCargo(id, nome) {
+    document.getElementById('nomeCargo').value = nome;
+    document.getElementById('salvarCargo').onclick = function() {
+      fetch('{% url "carregar_cargos" %}', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ id, nome: document.getElementById('nomeCargo').value })
+      })
+      .then(response => response.json())
+      .then(data => {
+        carregarCargos();
+        alert('Cargo editado com sucesso!');
+      })
+      .catch(error => {
+        console.error("Erro ao editar cargo:", error);
+      });
+    };
+  }
+
+  function removerCargo(id) {
+    if (confirm('Tem certeza que deseja remover este cargo?')) {
+      fetch('{% url "carregar_cargos" %}', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ id })
+      })
+      .then(response => response.json())
+      .then(data => {
+        carregarCargos();
+        alert('Cargo removido com sucesso!');
+      })
+      .catch(error => {
+        console.error("Erro ao remover cargo:", error);
+      });
+    }
+  }
+
+  document.getElementById("abrirFormulario").addEventListener("click", function() {
+    document.getElementById("tabelaSetorForm").style.display = "block";
+    document.body.appendChild(document.createElement("div")).classList.add("fundo-desfocado"); // Adiciona o fundo desfocado dinamicamente
+  });
+
+  document.querySelector("#tabelaSetorForm .fechar").addEventListener("click", function() {
+    document.getElementById("tabelaSetorForm").style.display = "none";
+    document.querySelector(".fundo-desfocado").remove(); // Remove o fundo desfocado
+  });
+</script>
+
+
+
+
 <div id="tabelaGruposDocumentosForm" class="table-container">
   <table>
       <div>
@@ -1325,27 +2654,37 @@ function carregarAreas() {
   </table>
 </div>
 <div id="janelaCadastroGrupoDocumento" class="modal" style="display: none;">
-  <div class="modal-content">
-      <h1 style="margin-bottom: 10px; padding: 10px;">
-        <span style="font-size: 90%;">Cadastro Grupo de Documento</span> 
-        <span class="fechar">&times;</span>
-    </h1>   
-      <input type="text" id="inputCodigoGrupoDocumento" placeholder="Código">
-      <input type="text" id="inputNomeGrupoDocumento" placeholder="Nome">
-      <select id="selectArea" name="area">
-          <!-- As opções serão preenchidas dinamicamente com JavaScript -->
-      </select>
+    <div class="modal-content">
+        <h1 style="margin-bottom: 10px; padding: 10px;">
+          <span style="font-size: 90%;">Cadastro Grupo de Documento</span>
+          <span class="fechar">&times;</span>
+      </h1>
+      <div class="input-container">
+          <input type="text" id="inputCodigoGrupoDocumento" placeholder=" " required>
+          <label for="inputCodigoGrupoDocumento">Código</label>
+      </div>
+      <div class="input-container">
+          <input type="text" id="inputNomeGrupoDocumento" placeholder=" " required>
+          <label for="inputNomeGrupoDocumento">Nome</label>
+      </div>
+      <div class="input-container">
+          <select id="selectArea" name="Area" required>
+              <option value="" disabled selected hidden></option>
+              <!-- As opções serão preenchidas dinamicamente com JavaScript -->
+          </select>
+          <label for="selectArea">Área</label>
+      </div>
+    </div>
+    <button id="cadastrarGrupoDocumento">Cadastrar</button>
   </div>
-  <button id="cadastrarGrupoDocumento">Cadastrar</button>
-</div>
 
 <!-- Modal de edição de Grupo de Documento -->
 <div id="modalEditarGrupoDocumento" class="modal">
   <div class="modal-content">
     <h1 style="margin-bottom: 10px; padding: 10px; display: flex; justify-content: space-between;">
-      <span style="font-size: 90%;">Editar Grupo de Documento</span> 
+      <span style="font-size: 90%;">Editar Grupo de Documento</span>
       <span class="close"style="cursor: pointer;">&times;</span>
-  </h1> 
+  </h1>
       <label for="editCodigoGrupoDocumento">Código:
       <input type="text" id="editCodigoGrupoDocumento" name="editCodigoGrupoDocumento"></label>
       <label for="editNomeGrupoDocumento">Nome:
@@ -1363,7 +2702,7 @@ function carregarAreas() {
       document.getElementById("janelaCadastroGrupoDocumento").style.display = "block";
       document.body.appendChild(document.createElement("div")).classList.add("fundo-desfocado"); // Adiciona o fundo desfocado dinamicamente
   });
-  
+
   // Fecha a janela de cadastro de Grupo de Documento quando o botão de fechar é clicado
   document.querySelector("#janelaCadastroGrupoDocumento .fechar").addEventListener("click", function() {
       document.getElementById("janelaCadastroGrupoDocumento").style.display = "none";
@@ -1407,7 +2746,7 @@ function carregarAreas() {
 
   var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 // Função para carregar as áreas existentes no <select>
-    
+
 </script>
 
 <script>
@@ -1494,7 +2833,6 @@ salvarEdicaoButton.onclick = function() {
       }
   }
 </script>
-
 
 <script>
  // Função para carregar os grupos de documentos na tabela
@@ -1592,7 +2930,7 @@ window.addEventListener('load', function() {
 <div id="janelaCadastroTipoDocumento" class="modal" style="display: none;"method="post">
   <div class="modal-content">
     <h1 style="margin-bottom: 10px; padding: 10px;">
-      <span style="font-size: 90%;">Cadastro tipo de Documento</span> 
+      <span style="font-size: 90%;">Cadastro tipo de Documento</span>
       <span class="fechar">&times;</span>
     </h1>
       <input type="text" id="inputCodigoTipoDocumento" placeholder="Código">
@@ -1662,12 +3000,11 @@ window.addEventListener('load', function() {
       </h1>
       </div>
     </div>
-    
+
     <div>
       <button id="btnCadastrarTipoDocumento">Cadastrar</button>
   </div>
 </div>
-
 
 <!-- Modal de edição de tipo de Documento -->
 <div id="modalEditarTipoDocumento" class="modal">
@@ -1697,7 +3034,6 @@ window.addEventListener('load', function() {
     <button id="salvarCodigotipoDocumento">Salvar</button>
   </div>
 </div>
-
 
 <script>
   // Adiciona evento de teclado para detectar Ctrl+A
@@ -1784,14 +3120,13 @@ function popularCheckboxes(cargos) {
   xhr.send();
 </script>
 
-
 <script>
   // Abre a janela de cadastro de Tipo de Documento quando o botão é clicado
   document.getElementById("abrirFormularioTipoDocumento").addEventListener("click", function() {
       document.getElementById("janelaCadastroTipoDocumento").style.display = "block";
       document.body.appendChild(document.createElement("div")).classList.add("fundo-desfocado"); // Adiciona o fundo desfocado dinamicamente
   });
-  
+
   // Fecha a janela de cadastro de Tipo de Documento quando o botão de fechar é clicado
   document.querySelector("#janelaCadastroTipoDocumento .fechar").addEventListener("click", function() {
       document.getElementById("janelaCadastroTipoDocumento").style.display = "none";
@@ -1803,10 +3138,10 @@ function popularCheckboxes(cargos) {
   // Função para preencher as opções do select com os grupos de documento
   function preencherOpcoesGrupoDocumento() {
       var selectGrupo = document.getElementById("selectGrupo");
-  
+
       // Limpa as opções atuais do select
       selectGrupo.innerHTML = '';
-  
+
       // Adiciona uma opção padrão desabilitada e oculta
       var defaultOption = document.createElement('option');
       defaultOption.value = '';
@@ -1815,7 +3150,7 @@ function popularCheckboxes(cargos) {
       defaultOption.hidden = true;
       defaultOption.textContent = 'Grupo';
       selectGrupo.appendChild(defaultOption);
-  
+
       // Envia uma solicitação AJAX para obter os grupos de documento
       var xhr = new XMLHttpRequest();
       xhr.onreadystatechange = function() {
@@ -1837,113 +3172,97 @@ function popularCheckboxes(cargos) {
       xhr.open('GET', '{% url "cadastrar_grupo_documento" %}', true);
       xhr.send();
   }
-  
+
   // Adicionando evento load para executar as duas funções
- 
-  </script>
-  
-  <script>  
-   // Função para enviar os dados do formulário para o backend
-function cadastrarTipoDocumento() {
-    // Capturar o token CSRF do cookie
-    function getCSRFToken() {
-        const cookieValue = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('csrftoken='))
-            .split('=')[1];
-        return cookieValue;
-    }
 
-    // Capturar os valores dos campos do formulário
-    const codigo = document.getElementById('inputCodigoTipoDocumento').value;
-    const nome = document.getElementById('inputNomeTipoDocumento').value;
-    const grupo_id = document.getElementById('selectGrupo').value; // Capturar o ID do grupo selecionado
-    const pcd = document.getElementById('pcdSelect').value;
-    const valor_legal = document.getElementById('valorLegalTipoDocumento').value;
-    const verifica_assinatura = document.getElementById('VerificarAssTipoDocumento').value;
-    // const auditoria = document.getElementById('AuditoriaTipoDocumento').value;
-    const validade = document.getElementById('ValidadeTipoDocumento').value;
-    const tipo_validade = document.getElementById('TipoValidadeTipoDocumento').value;
-    const exibe_relatorio = document.getElementById('ExibeRelatorioComplianceTipoDocumento').value;
-    const lista_situacao = document.getElementById('ListaSituacaoFiltroTipoDocumento').value;
-    const prioridade = document.getElementById('PrioridadeTipoDocumento').value;
-    const cargos_selecionados = [];
+</script>
 
-    
-    console.log('Valor de codigo recebido:', codigo);
-    console.log('Valor de nome recebido:', nome);
-    console.log('Valor de grupo_id recebido:', grupo_id);
-    console.log('Valor de pcd recebido:', pcd);
-    console.log('Valor de valor_legal recebido:', valor_legal);
-    console.log('Valor de verifica_assinatura recebido:', verifica_assinatura);
-    // console.log('Valor de auditoria recebido:', auditoria);
-    console.log('Valor de validade recebido:', validade);
-    console.log('Valor de tipo_validade recebido:', tipo_validade);
-    console.log('Valor de exibe_relatorio recebido:', exibe_relatorio);
-    console.log('Valor de lista_situacao recebido:', lista_situacao);
-    console.log('Valor de prioridade recebido:', prioridade);
+<script>
+  // Função para enviar os dados do formulário para o backend
+  function cadastrarTipoDocumento() {
+      // Capturar o token CSRF do cookie
+      function getCSRFToken() {
+          const cookieValue = document.cookie
+              .split('; ')
+              .find(row => row.startsWith('csrftoken='))
+              .split('=')[1];
+          return cookieValue;
+      }
 
+      // Capturar os valores dos campos do formulário
+      const codigo = document.getElementById('inputCodigoTipoDocumento').value;
+      const nome = document.getElementById('inputNomeTipoDocumento').value;
+      const grupo_id = document.getElementById('selectGrupo').value; // Capturar o ID do grupo selecionado
+      const pcd = document.getElementById('pcdSelect').value;
+      const valor_legal = document.getElementById('valorLegalTipoDocumento').value;
+      const verifica_assinatura = document.getElementById('VerificarAssTipoDocumento').value;
+      // const auditoria = document.getElementById('AuditoriaTipoDocumento').value;
+      const validade = document.getElementById('ValidadeTipoDocumento').value;
+      const tipo_validade = document.getElementById('TipoValidadeTipoDocumento').value;
+      const exibe_relatorio = document.getElementById('ExibeRelatorioComplianceTipoDocumento').value;
+      const lista_situacao = document.getElementById('ListaSituacaoFiltroTipoDocumento').value;
+      const prioridade = document.getElementById('PrioridadeTipoDocumento').value;
+      const cargos_selecionados = [];
 
-// Capturar os IDs dos cargos selecionados
-const checkboxes = document.querySelectorAll('.checkObrg input[type="checkbox"]');
-checkboxes.forEach(checkbox => {
-    if (checkbox.checked) {
-        cargos_selecionados.push(checkbox.id.replace('check', '')); // Adiciona o ID do cargo selecionado
-    }
-});
+      // Capturar os IDs dos cargos selecionados
+      const checkboxes = document.querySelectorAll('.checkObrg input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+          if (checkbox.checked) {
+              cargos_selecionados.push(checkbox.id.replace('check', '')); // Adiciona o ID do cargo selecionado
+          }
+      });
 
-console.log('IDs dos cargos selecionados:', cargos_selecionados);
+      // Montar o objeto com os dados a serem enviados para o backend
+      const data = {
+          codigo: codigo,
+          nome: nome,
+          grupo_id: grupo_id, // Incluir o ID do grupo selecionado
+          pcd: pcd,
+          valor_legal: valor_legal,
+          verifica_assinatura: verifica_assinatura,
+          auditoria: document.getElementById('AuditoriaTipoDocumento').value,
+          validade: validade,
+          tipo_validade: tipo_validade,
+          exibe_relatorio: exibe_relatorio,
+          lista_situacao: lista_situacao,
+          prioridade: prioridade,
+          cargos_selecionados: cargos_selecionados
+      };
 
-// Montar o objeto com os dados a serem enviados para o backend
-const data = {
-    codigo: codigo,
-    nome: nome,
-    grupo_id: grupo_id, // Incluir o ID do grupo selecionado
-    pcd: pcd,
-    valor_legal: valor_legal,
-    verifica_assinatura: verifica_assinatura,
-    auditoria: auditoria,
-    validade: validade,
-    tipo_validade: tipo_validade,
-    exibe_relatorio: exibe_relatorio,
-    lista_situacao: lista_situacao,
-    prioridade: prioridade,
-    cargos_selecionados: cargos_selecionados
-};
+      console.log('Dados a serem enviados:', data);
 
-    // Obter o token CSRF
-    const csrftoken = getCSRFToken();
+      // Obter o token CSRF
+      const csrftoken = getCSRFToken();
 
-    // Enviar os dados para o backend via requisição HTTP POST
-    fetch('{% url "cadastrar_tipodocumento" %}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken // Incluir o token CSRF nos cabeçalhos
-        },
-        body: JSON.stringify(data),
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Processar a resposta do backend
-        if (data.status === 'success') {
-            alert(data.message); // Mostrar mensagem de sucesso
-        } else {
-            alert('Erro: ' + data.message); // Mostrar mensagem de erro
-        }
-    })
-    .catch((error) => {
-        console.error('Erro:', error);
-        alert('Erro ao enviar os dados para o servidor');
-    });
-}
-    
-    // Evento de clique no botão de cadastrar
-    document.getElementById('btnCadastrarTipoDocumento').addEventListener('click', cadastrarTipoDocumento);
+      // Enviar os dados para o backend via requisição HTTP POST
+      fetch('{% url "cadastrar_tipodocumento" %}', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrftoken // Incluir o token CSRF nos cabeçalhos
+          },
+          body: JSON.stringify(data),
+      })
+      .then(response => response.json())
+      .then(data => {
+          // Processar a resposta do backend
+          if (data.status === 'success') {
+              alert(data.message); // Mostrar mensagem de sucesso
+          } else {
+              alert('Erro: ' + data.message); // Mostrar mensagem de erro
+          }
+      })
+      .catch((error) => {
+          console.error('Erro:', error);
+          alert('Erro ao enviar os dados para o servidor');
+      });
+  }
+// Evento de clique no botão de cadastrar
+  document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('btnCadastrarTipoDocumento').addEventListener('click', cadastrarTipoDocumento);
+  });
     </script>
-    
 
-  
 <script>
   function formatarBooleanoParaUsuario(valor) {
   return valor ? 'SIM' : 'NÃO';
@@ -2049,7 +3368,7 @@ document.addEventListener('DOMContentLoaded', function () {
 function removerTipoDocumento(tipoDocumentoId, row) {
     // Exibir uma mensagem de confirmação para o usuário
     const confirmacao = confirm("Tem certeza que deseja excluir este tipo de documento?");
-    
+
     // Se o usuário confirmar a exclusão
     if (confirmacao) {
         fetch('{% url "cadastrar_tipodocumento" %}', {
@@ -2081,185 +3400,7 @@ function getCookie(name) {
 
 </script>
 
-
-
-<div id="tabelaOcupaçãoForm" class="table-container">
-  <table>
-    
-      <thead>
-          <div>
-              <h1>OCUPAÇÕES</h1>
-          </div>
-          <div class="subheader3">
-                    
-            <button id="abrirFormulario"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
-            <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
-       
-            <select id="numLinhas" name="numLinhas">
-              <option value="" disabled selected hidden> NºLinhas</option>
-              <option value="8">8</option>
-              <option value="10">10</option>
-              <option value="15">15</option>
-              <option value="20">20</option>
-              <option value="40">40</option>
-              <option value="100">100</option>
-          </select>
-          
-        
-        <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
-  </div>
-      <tr>
-        <th>Código</th>
-        <th>Nome</th>
-        <th>Editar</th>
-        <th>Remover</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td data-label="Unidade"></td>
-        <td data-label="Matricula"></td>
-        <td data-label="Nome"></td>
-        <td data-label="Cargo"></td>
-        <td data-label="Admissão"></td>
-        <td data-label="Situação"></td>
-        <td data-label="Desligamento"></td>
-        <td>
-          <button><i class="bi bi-pencil-fill"></i></button>
-        </td>
-        <td>
-          <button><i class="bi bi-trash3-fill"></i></button>
-        </td>
-      </tr>
-      
-      <tr>
-        <td data-label="Unidade"></td>
-        <td data-label="Matricula"></td>
-        <td data-label="Nome"></td>
-        <td data-label="Cargo"></td>
-        <td data-label="Admissão"></td>
-        <td data-label="Situação"></td>
-        <td data-label="Desligamento"></td>
-        <td>
-          <button><i class="bi bi-pencil-fill"></i></button>
-        </td>
-        <td>
-          <button><i class="bi bi-trash3-fill"></i></button>
-        </td>
-      </tr>
-      <tr>
-        <td data-label="Unidade"></td>
-        <td data-label="Matricula"></td>
-        <td data-label="Nome"></td>
-        <td data-label="Cargo"></td>
-        <td data-label="Admissão"></td>
-        <td data-label="Situação"></td>
-        <td data-label="Desligamento"></td>
-        <td>
-          <button><i class="bi bi-pencil-fill"></i></button>
-        </td>
-        <td>
-          <button><i class="bi bi-trash3-fill"></i></button>
-        </td>
-      </tr>
-      <tr>
-        <td data-label="Unidade"></td>
-        <td data-label="Matricula"></td>
-        <td data-label="Nome"></td>
-        <td data-label="Cargo"></td>
-        <td data-label="Admissão"></td>
-        <td data-label="Situação"></td>
-        <td data-label="Desligamento"></td>
-        <td>
-          <button><i class="bi bi-pencil-fill"></i></button>
-        </td>
-        <td>
-          <button><i class="bi bi-trash3-fill"></i></button>
-        </td>
-      </tr>
-      <tr>
-        <td data-label="Unidade"></td>
-        <td data-label="Matricula"></td>
-        <td data-label="Nome"></td>
-        <td data-label="Cargo"></td>
-        <td data-label="Admissão"></td>
-        <td data-label="Situação"></td>
-        <td data-label="Desligamento"></td>
-        <td>
-          <button><i class="bi bi-pencil-fill"></i></button>
-        </td>
-        <td>
-          <button><i class="bi bi-trash3-fill"></i></button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-
-
-
-    <div id="formularioCrud" class="form-container-OPTION" style="display: none;">
-        
-        <div class="subheader2">
-            <H1>Cadastrar Funcionário</H1>
-            <button id="fecharFormulario" class="teste3">&times;</button>
-        </div>
-        <form>
-            <div class="form-group">
-                <select id="Empresa" name="Empresa" placeholder="Empresa">
-                    <option value="">Empresa</option>
-                </select>
-                <select id="regional" name="regional">
-                    <option value="regional1_opcao1">Regional</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <select id="unidade" name="unidade">
-                    <option value="unidade1_opcao1">Unidade</option>
-                </select>
-                <select id="regiao" name="regiao">
-                    <option value="regiao2_opcao1">Região</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <input type="text" id="matricula" name="matricula" placeholder="Matrícula">
-                <input type="text" id="nome" name="nome" placeholder="Nome">
-                <input type="text" id="email" name="email" placeholder="E-mail">
-            </div>
-            <div class="form-group">
-                <input type="text" id="cargo" name="cargo" placeholder="Cargo">
-                <input type="date" id="admissao" name="admissao" placeholder="Data de Admissão">
-                <input type="text" id="cpf" name="cpf" placeholder="CPF">
-                <select id="pcd" name="pcd">
-                    <option value="pcd_sim">Sim</option>
-                    <option value="pcd_nao">Não</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <select id="situacao" name="situacao">
-                    <option value="situacao_opcao1">Situação</option>
-                </select>
-                <select id="modo_ponto" name="modo_ponto">
-                    <option value="ponto_sim">Sim</option>
-                    <option value="ponto_não">não</option>
-                </select>
-                <select id="sistema_ponto" name="sistema_ponto">
-                    <option value="sistema_manual">BATE PONTO</option>
-                    <option value="sistema_biometrico">NÃO UTILIZA EFETIVIDADE</option>
-                    <option value="sistema_cartao">NÃO BATE PONTO</option>
-                </select>
-                <input type="date" id="desligamento" name="desligamento" placeholder="Data de Desligamento">
-            </div>
-            <div class="form-row button-row">
-              <button style="cursor:pointer" type="submit">Enviar</button>
-          </div>
-        </form>
-        </div>
-
-
-    <div id="SincronizarDocumentosForm" class="form-container">
+<div id="SincronizarDocumentosForm" class="form-container">
         <div class="subheader2">
             <p>SINCRONIZAR DOCUMENTOS</p>
         </div>
@@ -2270,7 +3411,7 @@ function getCookie(name) {
         </form>
     </div>
 
-    <div id="RessincronizarDocumentosForm" class="form-container">
+<div id="RessincronizarDocumentosForm" class="form-container">
         <div class="subheader2">
             <p>RESSINCRONIZAR DOCUMENTOS</p>
         </div>
@@ -2280,78 +3421,31 @@ function getCookie(name) {
             </div>
         </form>
     </div>
-    <div id="AtualizarBancoForm" class="form-container">
-        <div class="subheader2">
-            <p>ATUALIZAR BANCO DE DADOS</p>
-        </div>
-        <form>
-            <div class="form-row button-row">
-                <button type="submit">ATUALIZAR BANCO DE DADOS</button>
-            </div>
-        </form>
-    </div>
-
-    <div id="ErrosDepartamentosForm" class="form-container">
-      <div class="subheader2">
-          <p>ERROS DEPARTAMENTOS</p>
-      </div>
-      <form>
-          <div class="form-row button-row">
-              <button type="submit">Pesquisar</button>
-          </div>
-      </form>
-  </div>
-
-  <div id="ErrosRHForm" class="form-container">
+<div id="AtualizarBancoForm" class="form-container">
     <div class="subheader2">
-        <p>ERROS RH</p>
+        <p>ATUALIZAR BANCO DE DADOS</p>
     </div>
     <form>
         <div class="form-row button-row">
-            <button type="submit">Pesquisar</button>
+            <button id="atualizarBancoBtn" type="submit">ATUALIZAR BANCO DE DADOS</button>
         </div>
     </form>
 </div>
-<div id="ApagarDocumentoForm" class="form-container">
-  <div class="subheader2">
-      <p>APAGAR DOCUMENTO</p>
-      
-  </div>
-  <label for="texto">Informe as nomenclaturas abaixo separadas por ';'</label><br>
-  <label for="texto">Ex: 00000001_NOME_123456789_01_112_00000000_00_0001.PDF; 00000001_NOME_0123456789_01_113_00000000_00_0002.PDF</label><br>
-    <input type="text" id="texto" name="texto">
-  <form>
-      <div class="form-row button-row">
-          <button type="submit">APAGAR</button>
-      </div>
-  </form>
-</div>
-<div id="DocumentosApagadosForm" class="form-container">
-  <div class="subheader2">
-      <p>DOCUMENTOS APAGADOS</p>
-  </div>
-  <form>
-      <div class="form-row button-row">
-          <button type="submit">Pesquisar</button>
-      </div>
-  </form>
-</div>
 
-
-
+<div id="statusUpdate"></div>
 
 <div id="tabelausuariosForm" class="table-container">
   <table>
-    
+
       <thead>
           <div>
               <h1>USUÁRIOS</h1>
           </div>
           <div class="subheader3">
-                    
-            <button id="abrirFormulario"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
+
+            <button id="abrirFormularioUsuario"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
             <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
-       
+
             <select id="numLinhas" name="numLinhas">
               <option value="" disabled selected hidden> NºLinhas</option>
               <option value="8">8</option>
@@ -2361,8 +3455,8 @@ function getCookie(name) {
               <option value="40">40</option>
               <option value="100">100</option>
           </select>
-          
-        
+
+
         <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
   </div>
       <tr>
@@ -2389,7 +3483,7 @@ function getCookie(name) {
           <button><i class="bi bi-trash3-fill"></i></button>
         </td>
       </tr>
-      
+
       <tr>
         <td data-label="Unidade"></td>
         <td data-label="Matricula"></td>
@@ -2454,138 +3548,32 @@ function getCookie(name) {
   </table>
 </div>
 
+<script>
+  // Abre a janela de cadastro de Usuário quando o botão é clicado
+  document.getElementById("abrirFormularioUsuario").addEventListener("click", function() {
+      document.getElementById("tabelausuariosForm").style.display = "block";
+      document.body.appendChild(document.createElement("div")).classList.add("fundo-desfocado"); // Adiciona o fundo desfocado dinamicamente
+  });
 
-
-
-
-<div id="tabelaOcupaçãoForm" class="table-container">
-  <table>
-    
-      <thead>
-          <div>
-              <h1>OCUPAÇÕES</h1>
-          </div>
-          <div class="subheader3">
-                    
-            <button id="abrirFormulario"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
-            <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
-       
-            <select id="numLinhas" name="numLinhas">
-              <option value="" disabled selected hidden> NºLinhas</option>
-              <option value="8">8</option>
-              <option value="10">10</option>
-              <option value="15">15</option>
-              <option value="20">20</option>
-              <option value="40">40</option>
-              <option value="100">100</option>
-          </select>
-          
-        
-        <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
-  </div>
-      <tr>
-        <th>Código</th>
-        <th>Nome</th>
-        <th>Editar</th>
-        <th>Remover</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td data-label="Unidade"></td>
-        <td data-label="Matricula"></td>
-        <td data-label="Nome"></td>
-        <td data-label="Cargo"></td>
-        <td data-label="Admissão"></td>
-        <td data-label="Situação"></td>
-        <td data-label="Desligamento"></td>
-        <td>
-          <button><i class="bi bi-pencil-fill"></i></button>
-        </td>
-        <td>
-          <button><i class="bi bi-trash3-fill"></i></button>
-        </td>
-      </tr>
-      
-      <tr>
-        <td data-label="Unidade"></td>
-        <td data-label="Matricula"></td>
-        <td data-label="Nome"></td>
-        <td data-label="Cargo"></td>
-        <td data-label="Admissão"></td>
-        <td data-label="Situação"></td>
-        <td data-label="Desligamento"></td>
-        <td>
-          <button><i class="bi bi-pencil-fill"></i></button>
-        </td>
-        <td>
-          <button><i class="bi bi-trash3-fill"></i></button>
-        </td>
-      </tr>
-      <tr>
-        <td data-label="Unidade"></td>
-        <td data-label="Matricula"></td>
-        <td data-label="Nome"></td>
-        <td data-label="Cargo"></td>
-        <td data-label="Admissão"></td>
-        <td data-label="Situação"></td>
-        <td data-label="Desligamento"></td>
-        <td>
-          <button><i class="bi bi-pencil-fill"></i></button>
-        </td>
-        <td>
-          <button><i class="bi bi-trash3-fill"></i></button>
-        </td>
-      </tr>
-      <tr>
-        <td data-label="Unidade"></td>
-        <td data-label="Matricula"></td>
-        <td data-label="Nome"></td>
-        <td data-label="Cargo"></td>
-        <td data-label="Admissão"></td>
-        <td data-label="Situação"></td>
-        <td data-label="Desligamento"></td>
-        <td>
-          <button><i class="bi bi-pencil-fill"></i></button>
-        </td>
-        <td>
-          <button><i class="bi bi-trash3-fill"></i></button>
-        </td>
-      </tr>
-      <tr>
-        <td data-label="Unidade"></td>
-        <td data-label="Matricula"></td>
-        <td data-label="Nome"></td>
-        <td data-label="Cargo"></td>
-        <td data-label="Admissão"></td>
-        <td data-label="Situação"></td>
-        <td data-label="Desligamento"></td>
-        <td>
-          <button><i class="bi bi-pencil-fill"></i></button>
-        </td>
-        <td>
-          <button><i class="bi bi-trash3-fill"></i></button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-
+  // Fecha a janela de cadastro de Usuário quando o botão de fechar é clicado
+  document.querySelector("#tabelausuariosForm .fechar").addEventListener("click", function() {
+      document.getElementById("tabelausuariosForm").style.display = "none";
+      document.querySelector(".fundo-desfocado").remove(); // Remove o fundo desfocado
+  });
+</script>
 
 <div id="tabelaPermissõesForm" class="table-container">
   <table>
-    
+
       <thead>
           <div>
               <h1>PERMISSÕES</h1>
           </div>
           <div class="subheader3">
-                    
-            <button id="abrirFormulario"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
+
+            <button id="abrirFormularioPermissoes"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
             <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
-       
+
             <select id="numLinhas" name="numLinhas">
               <option value="" disabled selected hidden> NºLinhas</option>
               <option value="8">8</option>
@@ -2595,8 +3583,8 @@ function getCookie(name) {
               <option value="40">40</option>
               <option value="100">100</option>
           </select>
-          
-        
+
+
         <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
   </div>
       <tr>
@@ -2626,7 +3614,7 @@ function getCookie(name) {
           <button><i class="bi bi-trash3-fill"></i></button>
         </td>
       </tr>
-      
+
       <tr>
         <td data-label="Unidade"></td>
         <td data-label="Matricula"></td>
@@ -2691,20 +3679,164 @@ function getCookie(name) {
   </table>
 </div>
 
+<script>
+  // Abre a janela de cadastro de Permissão quando o botão é clicado
+  document.getElementById("abrirFormularioPermissoes").addEventListener("click", function() {
+      document.getElementById("tabelaPermissõesForm").style.display = "block";
+      document.body.appendChild(document.createElement("div")).classList.add("fundo-desfocado"); // Adiciona o fundo desfocado dinamicamente
+  });
+
+  // Fecha a janela de cadastro de Permissão quando o botão de fechar é clicado
+  document.querySelector("#tabelaPermissõesForm .fechar").addEventListener("click", function() {
+      document.getElementById("tabelaPermissõesForm").style.display = "none";
+      document.querySelector(".fundo-desfocado").remove(); // Remove o fundo desfocado
+  });
+</script>
+
+<div id="ErrosDepartamentosForm" class="form-container">
+ <table>
+
+      <thead>
+          <div>
+              <h1>PERMISSÕES</h1>
+          </div>
+          <div class="subheader3">
+
+            <button id="abrirFormulario"><i class="bi bi-plus" style="font-size: 30px;"></i></button>
+            <input type="text" id="pesquisa" name="pesquisa" placeholder="Digite sua pesquisa...">
+
+            <select id="numLinhas" name="numLinhas">
+              <option value="" disabled selected hidden> NºLinhas</option>
+              <option value="8">8</option>
+              <option value="10">10</option>
+              <option value="15">15</option>
+              <option value="20">20</option>
+              <option value="40">40</option>
+              <option value="100">100</option>
+          </select>
+
+
+        <button  id="downloadIcon"> <i class="bi bi-download" style="font-size: 25px;"></i> </button>
+  </div>
+      <tr>
+        <th>Código</th>
+        <th>Nome</th>
+        <th>QTD Empresas</th>
+        <th>QTD Regionais</th>
+        <th>QTD Unidades</th>
+        <th>QTD Paginas</th>
+        <th>QTD menus</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td data-label="Unidade"></td>
+        <td data-label="Matricula"></td>
+        <td data-label="Nome"></td>
+        <td data-label="Cargo"></td>
+        <td data-label="Admissão"></td>
+        <td data-label="Situação"></td>
+        <td data-label="Desligamento"></td>
+        <td>
+          <button><i class="bi bi-pencil-fill"></i></button>
+        </td>
+        <td>
+          <button><i class="bi bi-trash3-fill"></i></button>
+        </td>
+      </tr>
+
+      <tr>
+        <td data-label="Unidade"></td>
+        <td data-label="Matricula"></td>
+        <td data-label="Nome"></td>
+        <td data-label="Cargo"></td>
+        <td data-label="Admissão"></td>
+        <td data-label="Situação"></td>
+        <td data-label="Desligamento"></td>
+        <td>
+          <button><i class="bi bi-pencil-fill"></i></button>
+        </td>
+        <td>
+          <button><i class="bi bi-trash3-fill"></i></button>
+        </td>
+      </tr>
+      <tr>
+        <td data-label="Unidade"></td>
+        <td data-label="Matricula"></td>
+        <td data-label="Nome"></td>
+        <td data-label="Cargo"></td>
+        <td data-label="Admissão"></td>
+        <td data-label="Situação"></td>
+        <td data-label="Desligamento"></td>
+        <td>
+          <button><i class="bi bi-pencil-fill"></i></button>
+        </td>
+        <td>
+          <button><i class="bi bi-trash3-fill"></i></button>
+        </td>
+      </tr>
+      <tr>
+        <td data-label="Unidade"></td>
+        <td data-label="Matricula"></td>
+        <td data-label="Nome"></td>
+        <td data-label="Cargo"></td>
+        <td data-label="Admissão"></td>
+        <td data-label="Situação"></td>
+        <td data-label="Desligamento"></td>
+        <td>
+          <button><i class="bi bi-pencil-fill"></i></button>
+        </td>
+        <td>
+          <button><i class="bi bi-trash3-fill"></i></button>
+        </td>
+      </tr>
+      <tr>
+        <td data-label="Unidade"></td>
+        <td data-label="Matricula"></td>
+        <td data-label="Nome"></td>
+        <td data-label="Cargo"></td>
+        <td data-label="Admissão"></td>
+        <td data-label="Situação"></td>
+        <td data-label="Desligamento"></td>
+        <td>
+          <button><i class="bi bi-pencil-fill"></i></button>
+        </td>
+        <td>
+          <button><i class="bi bi-trash3-fill"></i></button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  // Abre a janela de cadastro de Erros Departamentos quando o botão é clicado
+  document.getElementById("abrirFormulario").addEventListener("click", function() {
+      document.getElementById("ErrosDepartamentosForm").style.display = "block";
+      document.body.appendChild(document.createElement("div")).classList.add("fundo-desfocado"); // Adiciona o fundo desfocado dinamicamente
+  });
+
+  // Fecha a janela de cadastro de Erros Departamentos quando o botão de fechar é clicado
+  document.querySelector("#ErrosDepartamentosForm .fechar").addEventListener("click", function() {
+      document.getElementById("ErrosDepartamentosForm").style.display = "none";
+      document.querySelector(".fundo-desfocado").remove(); // Remove o fundo desfocado
+  });
+</script>
 
 <div id="AlteraSenhaForm" class="form-container">
   <div class="subheader2">
       <p>ALTERAR SENHA</p>
   </div>
-     
+
       <input type="text" id="senha_atual" name="senha_atual" required placeholder="Senha atual"><br>
-  
-      
+
+
       <input type="text" id="nova_senha" name="nova_senha" required placeholder="Nova senha"><br>
-  
-      
+
+
       <input type="text" id="confirmar_senha" name="confirmar_senha" required placeholder="Confirmar senha"><br>
-  
+
       <div class="form-row button-row">
         <button type="submit">ALTERAR</button>
     </div>
@@ -2713,168 +3845,149 @@ function getCookie(name) {
 
 <script>
   function sincronizarDocumentos() {
-      // Função para obter o valor de um cookie por nome
-      function getCookie(name) {
-          let cookieValue = null;
-          if (document.cookie && document.cookie !== '') {
-              const cookies = document.cookie.split(';');
-              for (let i = 0; i < cookies.length; i++) {
-                  const cookie = cookies[i].trim();
-                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                      break;
-                  }
-              }
-          }
-          return cookieValue;
-      }
-  
-      // Evento de clique para atualizar o ponto
-      document.getElementById('sincronizarDocumentosBtn').addEventListener('click', function() {
-          fetch("{% url 'atualizar_controle_ponto' %}", {  
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'X-CSRFToken': getCookie('csrftoken')
-              }
-          })
-          .then(response => {
-              if (!response.ok) {
-                  throw new Error('Falha na rede com status: ' + response.status);
-              }
-              return response.json();
-          })
-          .then(data => {
-              document.getElementById('statusUpdate').textContent = data.status;
-          })
-          .catch(error => {
-              console.error('Erro ao atualizar os cartões de ponto:', error);
-              document.getElementById('statusUpdate').textContent = 'Erro ao atualizar: ' + error.message;
-          });
-      });
-  
-      // Evento de clique para carregar documentos vencidos
-      document.getElementById('sincronizarDocumentosBtn').addEventListener('click', function() {
-          fetch("{% url 'lista_vencidos' %}")
-          .then(response => {
-              if (!response.ok) {
-                  throw new Error('Falha na rede com status: ' + response.status);
-              }
-              return response.json();
-          })
-          .then(data => {
-              const lista = document.getElementById('listaDocumentos');
-              lista.innerHTML = '';
-              data.forEach(doc => {
-                  const item = document.createElement('li');
-                  item.innerHTML = `Matrícula: ${doc.matricula}, Nome: ${doc.nome}, CPF: ${doc.cpf}, Cargo: ${doc.cargo}, Unidade: ${doc.unidade}, Regional: ${doc.regional}, Empresa: ${doc.empresa}, Data de Vencimento: ${doc.data_vencimento}`;
-                  lista.appendChild(item);
-              });
-          })
-          .catch(error => {
-              console.error('Erro ao carregar documentos vencidos:', error);
-              document.getElementById('listaDocumentos').innerHTML = 'Erro ao carregar: ' + error.message;
-          });
-      });
-  
-      // Evento de clique para carregar documentos a vencer
-      document.getElementById('sincronizarDocumentosBtn').addEventListener('click', function() {
-          fetch("{% url 'lista_a_vencer' %}")
-          .then(response => {
-              if (!response.ok) {
-                  throw new Error('Falha na rede com status: ' + response.status);
-              }
-              return response.json();
-          })
-          .then(data => {
-              const listasVencimento = {
-                  '15_dias': document.getElementById('listaVencimento15'),
-                  '30_dias': document.getElementById('listaVencimento30'),
-                  '45_dias': document.getElementById('listaVencimento45'),
-                  '60_dias': document.getElementById('listaVencimento60'),
-                  '90_dias': document.getElementById('listaVencimento90'),
-              };
-  
-              Object.values(listasVencimento).forEach(lista => lista.innerHTML = '');
-  
-              Object.entries(data).forEach(([categoria, documentos]) => {
-                  documentos.forEach(doc => {
-                      const item = document.createElement('li');
-                      item.innerHTML = `Matrícula: ${doc.matricula}, Nome: ${doc.nome}, CPF: ${doc.cpf}, Cargo: ${doc.cargo}, Unidade: ${doc.unidade}, Regional: ${doc.regional}, Empresa: ${doc.empresa}, Data de Vencimento: ${doc.data_vencimento}`;
-                      listasVencimento[categoria].appendChild(item);
-                  });
-              });
-          })
-          .catch(error => {
-              console.error('Erro ao carregar documentos a vencer:', error);
-              document.getElementById('listaVencimento15').innerHTML = 'Erro ao carregar: ' + error.message;
-          });
-      });
+    // Função para obter o valor de um cookie por nome
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
 
-      // Evento de clique para pesquisa de documentos existentes
-      $('#searchForm').submit(function(event) {
-          event.preventDefault();
-  
-          var empresa = $('#empresa').val();
-          var regional = $('#regional').val();
-          var unidade = $('#unidade').val();
-          var nome = $('#nome').val();
-  
-          var searchData = {
-              empresa: empresa,
-              regional: regional,
-              unidade: unidade,
-              nome: nome
-          };
-  
-          $.ajax({
-              url: "{% url 'documentos_existentes' %}",
-              type: "GET",
-              data: searchData,
-              success: function(response) {
-                  console.log(response);
-              },
-              error: function(xhr, status, error) {
-                  console.error(error);
-              }
-          });
-      });
-  
-      // Função para fazer a solicitação POST para o endpoint de atualização de ASO
-      function atualizarASO() {
-          const csrftoken = getCookie('csrftoken');
-          var xhr = new XMLHttpRequest();
-          xhr.open('POST', urlAtualizarASO, true);
-          xhr.setRequestHeader('X-CSRFToken', csrftoken);
-          xhr.onload = function () {
-              if (xhr.status >= 200 && xhr.status < 300) {
-                  console.log('Atualização iniciada com sucesso!');
-              } else {
-                  console.error('Erro ao iniciar atualização: ', xhr.statusText);
-              }
-          };
-          xhr.onerror = function () {
-              console.error('Erro de rede ao iniciar atualização.');
-          };
-          xhr.send();
-      }
-  
-      // Associa o evento de clique do botão ao handler atualizarASO
-      document.addEventListener('DOMContentLoaded', function () {
-          const botaoAtualizar = document.querySelector('button#atualizarASO');
-          if (botaoAtualizar) {
-              botaoAtualizar.addEventListener('click', function(event) {
-                  event.preventDefault();
-                  atualizarASO();
-              });
-          }
-      });
-  }
-  
-  // Chama a função sincronizarDocumentos quando o botão "Sincronizar Documentos" for clicado
-  document.getElementById('sincronizarDocumentosBtn').addEventListener('click', function() {
-      sincronizarDocumentos();
-  });
+
+    // Evento de clique para carregar documentos vencidos
+    document.getElementById('sincronizarDocumentosBtn').addEventListener('click', function() {
+        fetch("{% url 'lista_vencidos' %}")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Falha na rede com status: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            const lista = document.getElementById('listaDocumentos');
+            lista.innerHTML = '';
+            data.forEach(doc => {
+                const item = document.createElement('li');
+                item.innerHTML = `Matrícula: ${doc.matricula}, Nome: ${doc.nome}, CPF: ${doc.cpf}, Cargo: ${doc.cargo}, Unidade: ${doc.unidade}, Regional: ${doc.regional}, Empresa: ${doc.empresa}, Data de Vencimento: ${doc.data_vencimento}`;
+                lista.appendChild(item);
+            });
+        })
+        .catch(error => {
+            console.error('Erro ao carregar documentos vencidos:', error);
+            document.getElementById('listaDocumentos').innerHTML = 'Erro ao carregar: ' + error.message;
+        });
+    });
+
+    // Evento de clique para carregar documentos a vencer
+    document.getElementById('sincronizarDocumentosBtn').addEventListener('click', function() {
+        fetch("{% url 'lista_a_vencer' %}")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Falha na rede com status: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            const listasVencimento = {
+                '15_dias': document.getElementById('listaVencimento15'),
+                '30_dias': document.getElementById('listaVencimento30'),
+                '45_dias': document.getElementById('listaVencimento45'),
+                '60_dias': document.getElementById('listaVencimento60'),
+                '90_dias': document.getElementById('listaVencimento90'),
+            };
+
+            Object.values(listasVencimento).forEach(lista => lista.innerHTML = '');
+
+            Object.entries(data).forEach(([categoria, documentos]) => {
+                documentos.forEach(doc => {
+                    const item = document.createElement('li');
+                    item.innerHTML = `Matrícula: ${doc.matricula}, Nome: ${doc.nome}, CPF: ${doc.cpf}, Cargo: ${doc.cargo}, Unidade: ${doc.unidade}, Regional: ${doc.regional}, Empresa: ${doc.empresa}, Data de Vencimento: ${doc.data_vencimento}`;
+                    listasVencimento[categoria].appendChild(item);
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Erro ao carregar documentos a vencer:', error);
+            document.getElementById('listaVencimento15').innerHTML = 'Erro ao carregar: ' + error.message;
+        });
+    });
+
+    // Evento de clique para pesquisa de documentos existentes
+    $('#searchForm').submit(function(event) {
+        event.preventDefault();
+
+        var empresa = $('#empresa').val();
+        var regional = $('#regional').val();
+        var unidade = $('#unidade').val();
+        var nome = $('#nome').val();
+
+        var searchData = {
+            empresa: empresa,
+            regional: regional,
+            unidade: unidade,
+            nome: nome
+        };
+
+        $.ajax({
+            url: "{% url 'documentos_existentes' %}",
+            type: "GET",
+            data: searchData,
+            success: function(response) {
+                console.log(response);
+            },
+            error: function(xhr, status, error) {
+                console.error(error);
+            }
+        });
+    });
+
+    // Função para fazer a solicitação POST para o endpoint de atualização de ASO
+    function atualizarASO() {
+        const csrftoken = getCookie('csrftoken');
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', urlAtualizarASO, true);
+        xhr.setRequestHeader('X-CSRFToken', csrftoken);
+        xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                console.log('Atualização iniciada com sucesso!');
+            } else {
+                console.error('Erro ao iniciar atualização: ', xhr.statusText);
+            }
+        };
+        xhr.onerror = function () {
+            console.error('Erro de rede ao iniciar atualização.');
+        };
+        xhr.send();
+    }
+
+    // Associa o evento de clique do botão ao handler atualizarASO
+    document.addEventListener('DOMContentLoaded', function () {
+        const botaoAtualizar = document.querySelector('button#atualizarASO');
+        if (botaoAtualizar) {
+            botaoAtualizar.addEventListener('click', function(event) {
+                event.preventDefault();
+                atualizarASO();
+            });
+        }
+    });
+
+    // Chama atualizarASO dentro da função sincronizarDocumentos
+    atualizarASO();
+}
+
+// Chama a função sincronizarDocumentos quando o botão "Sincronizar Documentos" for clicado
+document.getElementById('sincronizarDocumentosBtn').addEventListener('click', function() {
+    sincronizarDocumentos();
+});
+
   </script>
 
     <script>
@@ -2890,6 +4003,107 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+    <script>
+        $(document).ready(function(){
+            $("#searchInput").on("keyup", function() {
+                var value = $(this).val().toLowerCase();
+                $("#tabela-relatorio tbody tr").filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                });
+            });
+        });
+        </script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+        function authenticateDownload(format) {
+            // Aqui, você pode implementar qualquer lógica de autenticação necessária.
+            switch (format) {
+                case 'csv':
+                    exportTableToCSV('relatorio.csv');
+                    break;
+                case 'xlsx':
+                    exportTableToXLSX('relatorio.xlsx');
+                    break;
+                case 'pdf':
+                    exportTableToPDF('relatorio.pdf');
+                    break;
+            }
+        }
+
+        function exportTableToCSV(filename) {
+            var csv = [];
+            var rows = document.querySelectorAll("#tabela-relatorio tr");
+
+            for (var i = 0; i < rows.length; i++) {
+                var row = [], cols = rows[i].querySelectorAll("td, th");
+
+                for (var j = 0; j < cols.length; j++)
+                    row.push('"' + cols[j].innerText + '"');
+
+                csv.push(row.join(","));
+            }
+
+            downloadCSV(csv.join("\n"), filename);
+        }
+
+        function exportTableToXLSX(filename) {
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.table_to_sheet(document.getElementById('tabela-relatorio'));
+            XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+
+            // Write the workbook to a file
+            XLSX.writeFile(wb, filename);
+        }
+
+        function exportTableToPDF(filename) {
+            const element = document.getElementById('tabela-relatorio');
+
+            html2canvas(element).then((canvas) => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf.jsPDF({
+                    orientation: 'landscape',
+                });
+                const imgProps= pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(filename);
+            });
+        }
+
+        function downloadCSV(csv, filename) {
+            var csvFile;
+            var downloadLink;
+
+            // CSV file
+            csvFile = new Blob([csv], {type: "text/csv"});
+
+            // Download link
+            downloadLink = document.createElement("a");
+
+            // File name
+            downloadLink.download = filename;
+
+            // Create a link to the file
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+
+            // Hide download link
+            downloadLink.style.display = "none";
+
+            // Add the link to DOM
+            document.body.appendChild(downloadLink);
+
+            // Click download link
+            downloadLink.click();
+
+            // Remove the link from DOM
+            document.body.removeChild(downloadLink);
+        }
+        </script>
 
     <script src="{% static 'bootstrap/js/src/configuracao.js' %}"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

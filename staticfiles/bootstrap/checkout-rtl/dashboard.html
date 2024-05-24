@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+
+{% load static %}
+
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{% static 'bootstrap/images/css/dashboard.css' %}">
+
+<!--script>
+    function abrirDossie() {
+        window.location.href = '/documento/pesquisa_dossie/';
+    }
+</script-->
+
+</head>
+
+<body>
+
+  <header>
+    <img src="{% static 'bootstrap/images/AEGEA/logo/logo-aegea.png' %}" alt="AEGEA"><br>
+
+    <h1>GED ONE - Gerenciamento Eletrônico de Documentos</h1>
+    <p>USUÁRIO:___</p>
+  </header>
+
+  <!-- Subcabeçalho -->
+  <div class="subheader">
+    <button onclick="openModal()">Inicio</button>
+    <button onclick="abrirDossie()">Dossiê</button>
+    <button>Relatórios</button>
+    <button>Configurações</button>
+    <button>Sair</button>
+  </div>
+
+  <!-- Removido o código do modal -->
+
+  <script src="script.js"></script>
+  <!-- Removido o script relacionado ao modal -->
+
+</body>
+</html>

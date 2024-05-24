@@ -1,0 +1,846 @@
+
+/* Estilos que não estão dentro das media queries */
+/*@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300&display=swap');*/
+
+
+
+
+/* sidebar*/
+
+
+nav.menu-lateral.expandir{
+  width:360px;
+}   
+
+.btn-expandir{
+  width: 100%;
+  padding-left: 10px;
+}
+
+.btn-expandir > i{
+  color: #ffffff;
+  font-size: 24px;
+  cursor: pointer;    
+}
+
+ul{
+  height: 100%;
+  list-style-type: none;
+}
+ul li.item-menu{
+  transition: 1s;
+  
+}
+
+ul li.ativo{
+  background-color: #723588;
+}
+ul li.item-menu:hover{
+  background: #FFDD00;;
+}
+
+
+
+ul li.item-menu {
+  margin: 0; /* Remove todas as margens */
+  background-color: #723588;
+ 
+}
+
+
+
+
+
+ul li.item-menu a{
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 15px;
+  padding: 12px 4%;
+  display: flow-root;
+  margin-bottom: 1px;
+  line-height: 1px;
+}
+
+/* titulos lateral expandir*/
+ul h1{
+  font-size: 20px;
+  
+  
+}
+
+
+
+ul li.item-menu a .txt-link{
+  margin-left: 70px;
+  transition: 1s;
+  opacity: 0;
+  margin-bottom: 10px; /* Ajuste o valor conforme necessário */
+
+}
+nav.menu-lateral.expandir .txt-link{
+  margin-left: 10px;
+  opacity: 1;
+}
+ul li.item-menu a .icon > i{
+  font-size: 25px;
+}
+
+
+/* Estilizando a barra de rolagem */
+nav.menu-lateral::-webkit-scrollbar {
+  width: 5px; /* Largura da barra de rolagem */
+}
+
+/* Estilizando o controle deslizante da barra de rolagem */
+nav.menu-lateral::-webkit-scrollbar-thumb {
+  background-color: #723588; /* Cor do controle deslizante */
+  border-radius: 10px; /* Borda arredondada */
+}
+
+/* Estilizando a barra de rolagem quando o mouse estiver sobre ela */
+nav.menu-lateral:hover::-webkit-scrollbar-thumb {
+  background-color: #723588; /* Cor do controle deslizante quando o mouse estiver sobre ele */
+}
+
+/* ... Seus estilos existentes ... */
+
+/* Se necessário, ajuste os estilos da barra lateral */
+/* Estilos para o menu lateral */
+nav.menu-lateral {
+  width: 80px;
+  height: calc(110vh - 117px); /* Altura máxima ajustada para o tamanho da tela, excluindo o cabeçalho e o subcabeçalho */
+  background-color:#bda0c8; /* Cor de fundo azul escuro */
+  padding: 0; /* Removido o padding */
+  box-shadow: 4px 0 0 #FFDD00;
+  position: fixed;
+  top: 107px;
+  left: 0;
+  overflow-y: auto; /* Adiciona uma barra de rolagem vertical quando necessário */
+  z-index: 1;
+  transition: .6s;
+}
+
+
+table {
+  font-weight: 400;
+  min-width: 420px;
+  width: 100%;
+  
+  thead {
+    display: none;
+    font-weight: 500;
+  }
+  
+  tbody {
+    tr {
+      border: 1px solid #dad6eb;
+      border-radius: 5px;
+      display: block;
+      padding: 30px;
+      margin-bottom: 30px;
+      
+      td {
+        display: block;
+        font-weight: 500;
+        padding: 5px;
+        position: relative;
+        text-align: right;
+        
+        button {
+          
+          border: none;
+          border-radius: 20px;
+          background-color: none;
+          bottom: -30px;
+          color: #050000;
+          font-family: 'Roboto', sans-serif;
+          font-weight: 700;
+          left: 30%;
+          padding: 10px 0;
+          position: absolute;
+          transform: translate(-50%, 50%);
+         
+          
+          &:hover,
+          &:focus {
+            cursor: pointer;
+          }
+        }
+        
+        &:before {
+          color: #8a8a87;
+          content: attr(data-label);
+          font-weight: 400;
+          left: 5px;
+          position: absolute;
+        }        
+      }
+    }
+  }
+}
+
+@media all and (min-width: 768px) {
+  table {
+    border: 1px solid #eee;
+    border-collapse: collapse;
+    max-width: 900%;
+    max-height: 900%;
+    text-align: center;
+    
+    thead {
+      display: table-header-group;
+      
+      th {
+        padding: 10px;
+      }
+    }
+    
+    tbody {
+      font-size: .875em;
+      
+      tr {
+        border: none;
+        display: table-row;
+        
+        &:nth-child(odd) {
+          background: #eee;
+        }
+        
+        td {
+          display: table-cell;
+          font-weight: 400;
+          padding: 6px;
+          text-align: center;
+          
+          button {
+            display: inline-block;
+            padding: 10px 15px;
+            position: initial;
+            transform: translate(0);
+            width: auto;
+          }
+          
+          &:before {
+            display: none;
+          }
+          
+          &:last-child {
+            text-align: center;
+          }
+        }
+      }
+    }
+  }
+}
+
+
+.table-container {
+  width: 70%;
+  padding: 30px;
+  max-width: 900px;
+  position: absolute;
+  top: 60%;
+  margin-left: 65%;
+  transform: translate(-50%, -60%);
+  margin-top: 90px; /* Ajustar a margem conforme necessário */
+  max-width: 90%; /* Defina a largura máxima desejada */
+  max-height: 90%; /* Defina a altura máxima desejada */
+  overflow: auto; /* Adicione uma barra de rolagem quando necessário */
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.433);
+  display: none;
+}
+
+@media only screen and (max-width: 768px) {
+  .table-container {
+    padding: 20px; /* Ajusta o preenchimento interno quando a tela for menor ou igual a 768px */
+  }
+}
+
+
+/* Restante do seu CSS permanece igual */
+
+
+.table-container h1{
+  font-size: 20px;
+  color: #fff;
+  background-color: #723588;
+  padding: 1%;
+
+}
+
+
+
+.subheader3 {
+  display: flex;
+  align-items: center;
+}
+
+.subheader3 button,
+.subheader3 select {
+  margin-right: 10px;
+}
+#search-btn{
+  padding: 50%;
+}
+
+.Icons3{
+  margin-right: 5px;
+}
+
+#tabelaFuncionariosForm{
+  display: none;
+}
+
+
+
+.form-container {
+  background-color: rgb(255, 255, 255);
+  border-radius: 9px;
+  box-shadow: 0 0 40px rgb(0, 0, 0);
+  width: 50%; /* Alterada para 100% */
+  padding: 30px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 50%;
+  left: 60%;
+  transform: translate(-50%, -60%);
+  display: none;
+}
+
+@media only screen and (max-width: 768px) {
+  .form-container {
+    padding: 20px;
+  }
+}
+
+
+.subheader2 {
+  border-radius: 8px;
+  background-color: #723588;
+  color: #ffffff;
+  padding: 15px;
+  position: fixed;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(240, 221, 221, 0.1);
+  top: -50px; /* Ajuste o valor top conforme necessário */
+  
+}
+
+.subheader2 p {
+  margin: 0;
+}
+
+.form-container-OPTION {
+  background-color: rgb(255, 255, 255);
+  border-radius: 9px;
+  box-shadow: 0 0 40px rgb(0, 0, 0);
+  width: 80%; /* Alterada para 100% */
+  padding: 30px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 70%;
+  left: 60%;
+  transform: translate(-60%, -70%);
+
+}
+
+@media only screen and (max-width: 768px) {
+  .form-container-OPTION {
+    padding: 20px;
+  }
+}
+
+.button-row {
+  display: flex;
+  justify-content: center; /* Centraliza horizontalmente */
+  align-items: center; /* Centraliza verticalmente */
+  height: 100px; /* Defina a altura desejada para a linha */
+}
+
+.button-row button {
+  background-color: #723588;
+  color: #fff;
+  padding: 10px;
+  border: none;
+  border-radius: 15px;
+}
+
+/* Adiciona o efeito de fundo desfocado quando a classe 'modal-open' é aplicada ao body */
+.modal-open::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Cor de fundo desfocada */
+  backdrop-filter: blur(5px); /* Desfoque para efeito de fundo */
+  z-index: 1000; /* Z-index alto para ficar acima de outros elementos */
+}
+.container {
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+input[type="text"],
+input[type="date"],
+select {
+  width: calc(50% - 5px);
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+}
+.form-group {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.form-group input[type="text"],
+.form-group input[type="date"],
+.form-group select {
+  flex: 1;
+  margin-right: 10px;
+}
+
+
+
+
+
+ul li.item-menu2{
+  transition: 1s;
+  
+}
+
+
+ul li.item-menu2:hover{
+  background: #FFDD00;
+}
+
+
+ul li.item-menu2 a .icon > i{
+  font-size: 25px;
+}
+
+
+ul li.item-menu2 a{
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 15px;
+  padding: 12px 4%;
+  display: flow-root;
+  margin-bottom: 1px;
+  line-height: 1px;
+}
+
+
+
+ul li.item-menu2 a .txt-link{
+  margin-left: 70px;
+  transition: 1s;
+  opacity: 0;
+  margin-bottom: 10px; /* Ajuste o valor conforme necessário */
+
+}
+
+#abrirFormulario {
+  /* Adicione estilos específicos para o botão com id abrirFormulario */
+  background-color: #fff;
+  color: #723588; /* Cor do texto branco */
+ 
+  font-size: 30px; /* Tamanho da fonte */
+  cursor: pointer;
+  border:none;
+}
+
+
+
+
+#downloadIcon{
+  /* Adicione estilos específicos para o botão com id abrirFormulario */
+  border: none;
+  background-color: #ffffff;
+  color: #723588;
+  padding: 10px 15px; /* Preenchimento interno */
+  font-size: 16px; /* Tamanho da fonte */
+  cursor: pointer;
+}
+
+
+
+#pesquisa{
+  margin-top: 20px;
+  font-size: 100%;
+  padding: 10px;
+}
+
+#numLinhas{
+  margin-top: 20px;
+  padding: 10px;
+}
+
+#exportFormat4,
+#exportFormat3,
+#exportFormat2,
+#exportFormat{
+  width: 20%;
+  margin-top: 20px;
+  padding: 10px;
+}
+
+
+#fecharFormulario{
+  color: #fff;
+  position: fixed;
+  margin-left: 95%;
+  background-color: #ffffff35;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  border-radius: 20%;
+}
+
+
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 2; /* Defina um valor maior para garantir que a janela apareça na frente da tabela */
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px; /* Defina o tamanho desejado */
+  max-width: 80%; /* Limita o tamanho máximo */
+  background-color: #fefefe;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  
+}
+
+/* Estilize o botão de fechar, se necessário */
+.fechar {
+  float: right;
+  cursor: pointer;
+  color: #fff;
+  font-size: 30px;
+}
+
+
+ /* Estilize o fundo desfocado */
+ .fundo-desfocado {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Cor de fundo semi-transparente para criar o efeito de desfoque */
+  backdrop-filter: blur(5px); /* Aplica o filtro de desfoque */
+  z-index: 9998; /* Z-index menor que o da janela de cadastro */
+}
+
+/* Estilize a janela de cadastro */
+#janelaCadastro {
+  width: 50%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999; /* Z-index maior que o do fundo desfocado */
+  /* Adicione outros estilos conforme necessário */
+}
+
+
+.modal-content h1{
+  background-color: #723588;
+  color: #ffffff;
+}
+
+
+    /* Estilize o fundo desfocado */
+    .fundo-desfocado-editar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5); /* Cor de fundo semi-transparente para criar o efeito de desfoque */
+      backdrop-filter: blur(5px); /* Aplica o filtro de desfoque */
+      z-index: 9998; /* Z-index menor que o da janela de edição */
+  }
+
+  /* Estilize a janela de edição */
+  #modalEditarUnidade,
+  #modalEditarRegional,
+  #modalEditar {
+      z-index: 9999; /* Z-index maior que o do fundo desfocado */
+      /* Adicione outros estilos conforme necessário */
+  }
+  #salvarEdicaoUnidade,
+  #salvarEdicaoRegional,
+  #salvarEdicaoEmpresa,
+  #salvarEdicaoGrupoDocumento,
+  #salvarEdicao {
+    background-color: #723588;
+    color: #ffffff; /* Cor da fonte branca */
+    border-radius: 5px; /* Bordas arredondadas */
+    padding: 8px 16px; /* Adiciona um preenchimento interno ao botão */
+    border: none; /* Remove a borda */
+    cursor: pointer;
+  }
+  #salvarEdicaoUnidade:hover,
+  #salvarEdicaoRegional:hover,
+  #salvarEdicaoEmpresa:hover,
+  #salvarEdicaoGrupoDocumento:hover,
+  #salvarEdicao:hover {
+    background-color: #8c4fa8; /* Altera a cor de fundo ao passar o mouse */
+  }
+  
+
+/* Estilize a janela de edição de Grupo de Documento */
+#modalEditarEmpresa,
+#modalEditarFuncionario,
+#modalEditarGrupoDocumento {
+  z-index: 9999; /* Z-index maior que o do fundo desfocado */
+  /* Adicione outros estilos conforme necessário */
+}
+
+#janelaCadastroGrupoDocumento{
+  width: 50%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999; /* Z-index maior que o do fundo desfocado */
+  /* Adicione outros estilos conforme necessário */
+}
+
+#janelaCadastroTipoDocumento{
+  width: 50%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999; /* Z-index maior que o do fundo desfocado */
+  /* Adicione outros estilos conforme necessário */
+}
+
+#janelaFuncionario{
+  width: 50%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999; /* Z-index maior que o do fundo desfocado */
+  /* Adicione outros estilos conforme necessário */
+}
+
+#janelaUnidade,
+#janelaRegionais{
+  width: 50%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999; /* Z-index maior que o do fundo desfocado */
+  /* Adicione outros estilos conforme necessário */
+}
+.fecharEmpresa {
+  float: right; /* Para alinhar o ícone à direita dentro do h1 */
+  color: rgb(255, 255, 255); /* Cor do ícone */
+  cursor: pointer; /* Cursor do mouse */
+  margin-left: 10px; /* Para adicionar um espaço entre o texto e o ícone */
+}
+
+.fecharFuncionario{
+  float: right; /* Para alinhar o ícone à direita dentro do h1 */
+  color: rgb(255, 255, 255); /* Cor do ícone */
+  cursor: pointer; /* Cursor do mouse */
+  margin-left: 10px; /* Para adicionar um espaço entre o texto e o ícone */
+}
+.fecharUnidade,
+.fecharRegionais {
+  float: right; /* Para alinhar o ícone à direita dentro do h1 */
+  color: rgb(255, 255, 255); /* Cor do ícone */
+  cursor: pointer; /* Cursor do mouse */
+  margin-left: 10px; /* Para adicionar um espaço entre o texto e o ícone */
+}
+#janelaEmpresa{
+  width: 50%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999; /* Z-index maior que o do fundo desfocado */
+  /* Adicione outros estilos conforme necessário */
+}
+.checkObrg, .checkNaoObrg {
+  background-color: white;
+  border: 1px solid black;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.479);
+  padding: 10px;
+  margin-right: 10px; /* Espaço entre as classes */
+  max-width: 600px; /* Largura máxima */
+  max-height: 200px; /* Altura máxima */
+  overflow: auto; /* Adiciona barra de rolagem quando necessário */
+}
+
+/* Estilo para os checkboxes e etiquetas */
+input[type="checkbox"] {
+  display: inline-block; /* Alinha os checkboxes horizontalmente */
+  vertical-align: middle; /* Alinha verticalmente ao texto */
+}
+label {
+  display: inline-block; /* Alinha as etiquetas horizontalmente */
+  vertical-align: middle; /* Alinha verticalmente ao texto */
+  margin-left: 5px; /* Adiciona um espaço entre o checkbox e o texto */
+}
+
+.checkObrg h1{
+  background-color: #723588;
+  font-size: 14px;
+}
+
+#cadastrarUnidade,
+#cadastrarRegionais,
+#cadastrarFuncionario,
+#btnCadastrarTipoDocumento,
+#cadastrarGrupoDocumento,
+#cadastrar,
+#cadastrarEmpresa {
+  background-color: #723588;
+  color: white;
+  cursor: pointer;
+  width: 200px; /* Ajuste o valor conforme necessário */
+  height: 40px; /* Ajuste o valor conforme necessário */
+  font-size: inherit; /* Mantém o tamanho da fonte */
+  border-radius: 5px; /* Arredonda os cantos do botão */
+  float: right;
+
+}
+
+#cadastrarFuncionario,
+#btnCadastrarTipoDocumento:hover,
+#cadastrarGrupoDocumento:hover,
+#cadastrar:hover,
+#cadastrarEmpresa:hover {
+  background-color: #723588;
+}
+
+#abrirFormularioUnidade,
+#abrirFormularioRegionais,
+#abrirFormularioFuncionario,
+#abrirFormularioTipoDocumento,
+#abrirFormularioGrupoDocumento,
+#abrirFormularioArea,
+#abrirFormularioEmpresa {
+  font-size: 30px; /* Ajusta o tamanho do ícone */
+  background-color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+ .input-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px; /* Espaço entre as colunas */
+        }
+
+        .column {
+            flex: 1;
+        }
+
+        .input-container {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .input-container input,
+        .input-container select {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .input-container input:focus,
+        .input-container select:focus {
+            border-color: #723588;
+        }
+
+        .input-container label {
+            position: absolute;
+            top: 50%;
+            left: 8px;
+            transform: translateY(-50%);
+            background: white;
+            padding: 0 4px;
+            color: #aaa;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .input-container input:focus + label,
+        .input-container input:not(:placeholder-shown) + label,
+        .input-container select:focus + label,
+        .input-container select:not([value=""]) + label {
+            top: -8px;
+            left: 8px;
+            color: #723588;
+            font-size: 12px;
+        }
+
+        .input-container select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background: none;
+            padding: 8px;
+        }
+
+        #exportButton4,
+        #exportButton3,
+        #exportButton2,
+        #exportButton {
+          background-color:#723588; /* Cor de fundo azul */
+          color: rgb(255, 255, 255); /* Cor do ícone preto */
+          border-radius: 10px; /* Borda meio arredondada */
+          padding: 10px 20px; /* Espaçamento interno */
+          font-size: 16px; /* Tamanho da fonte */
+          border: none; /* Remover borda */
+          cursor: pointer;
+      }
+      
+     
+      
+      
+    

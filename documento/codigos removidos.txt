@@ -1589,4 +1589,409 @@ function visualizarDocumento(id) {
 
 
 
+<style>
+    .form-floating>label {
+        position: absolute;
+        top: 50%;
+        left: 1rem;
+        transform: translateY(-50%);
+        pointer-events: none;
+        transition: all 0.2s;
+    }
+    .form-control:focus~label,
+    .form-control:not(:placeholder-shown)~label,
+    .form-control:valid~label {
+        top: 0;
+        left: 1rem;
+        transform: translateY(-110%);
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    .form-control {
+        height: calc(3.5rem + 2px);
+        padding: 1rem;
+    }
+</style>
+
+
+
+            <!-- <li class="item-menu" id="DocumentosAuditorias" data-target="DocumentosAuditoriasForm">
+                <a href="#">
+                    <span class="icon"><i class="bi bi-record2-fill"></i></span>
+                    <span class="txt-link">Documentos para Auditorias</span>
+                </a>
+            </li> -->
+
+            <!--<li class="item-menu" id="documentosAVencerItem" data-target="documentosAVencerForm">
+                <a href="#">
+                    <span class="icon"><i class="bi bi-record2-fill"></i></span>
+                    <span class="txt-link">Documentos Existentes para Auditorias</span>
+                </a>
+            </li>-->
+
+            <div id="DocumentosAuditoriasForm" class="form-container">
+        <div class="subheader2">
+            <p>DOCUMENTOS PARA AUDITORIAS</p>
+        </div>
+        <form>
+            <div class="form-row">
+                <select id="empresa" name="empresa" placeholder="Empresa" onclick="carregarEmpresas()">
+                    <option value="empresa" disabled selected>Empresa</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <select id="Regional" name="Regional" placeholder="Regional" onclick="carregarRegional()">
+                    <option value="Regional" disabled selected>Regional</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <select id="Unidade" name="Unidade" placeholder="Unidade" onclick="carregarUnidade()">
+                    <option value="Unidade" disabled selected>Unidade</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <input type="text" id="nome" name="nome" placeholder="Nome do Colaborador">
+            </div>
+            <div class="form-row">
+                <input type="text" id="matricula" name="matricula" placeholder="Matrícula">
+            </div>
+            <div class="form-row">
+                <input type="text" id="cpf" name="cpf" placeholder="CPF">
+            </div>
+            <div class="form-row">
+                <select id="Cargo" name="Cargo" placeholder="Cargo" onclick="carregarCargo()">
+                    <option value="Cargo" disabled selected>Cargo</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="date-row">
+                    <input type="date" id="admissao" name="admissao" placeholder="Admissão">
+                </div>
+                <div class="date-row">
+                    <input type="date" id="desligamento" name="desligamento" placeholder="Desligamento">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <select id="situacao" name="situacao" placeholder="Situação">
+                    <option value="" disabled selected> Situação </option>
+                    <option value="ativo">Ativo</option>
+                    <option value="inativo">Inativo</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <select id="Tipo de Documento" name="Tipo de Documento" placeholder="Cargo" onclick="carregarTipoDeDocumento()">
+                    <option value="Tipo de Documento" disabled selected>Tipo de Documento</option>
+                </select>
+            </div>
+            <div class="form-row button-row">
+                <button type="submit">Pesquisar</button>
+            </div>
+        </form>
+    </div>
+
+
+    @csrf_exempt
+def gerenciar_colaborador(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        logger.debug('Dados recebidos: %s', data)  # Log dos dados recebidos
+        if 'excluir' in data:
+            colaborador_id = data.get('id')
+            colaborador = Colaborador.objects.get(id=colaborador_id)
+            colaborador.delete()
+            logger.info('Colaborador excluído: ID %s', colaborador_id)
+            return HttpResponse(status=204)
+        else:
+            colaborador_id = data.get('id', None)
+            if colaborador_id:
+                colaborador = Colaborador.objects.get(id=colaborador_id)
+                # Atualiza os campos do colaborador com os novos valores recebidos
+                colaborador.nome = data.get('nome', colaborador.nome)
+                colaborador.matricula = data.get('matricula', colaborador.matricula)
+                colaborador.cpf = data.get('cpf', colaborador.cpf)
+                colaborador.cargo_id = data.get('cargo_id', colaborador.cargo_id)
+                colaborador.status_id = data.get('status_id', colaborador.status_id)
+                colaborador.admissao = data.get('admissao', colaborador.admissao)
+                colaborador.desligamento = data.get('desligamento', colaborador.desligamento)
+                colaborador.email = data.get('email', colaborador.email)
+                colaborador.pcd = data.get('pcd', colaborador.pcd)
+                colaborador.save()
+                logger.info('Colaborador atualizado: ID %s', colaborador_id)
+                return JsonResponse({'status': 'success', 'message': 'Colaborador atualizado com sucesso'})
+            else:
+                # Cria um novo colaborador
+                novo_colaborador = Colaborador.objects.create(
+                    nome=data['nome'],
+                    matricula=data['matricula'],
+                    cpf=data['cpf'],
+                    cargo_id=data['cargo_id'],
+                    status_id=data['status_id'],
+                    admissao=data['admissao'],
+                    desligamento=data.get('desligamento'),
+                    email=data.get('email'),
+                    pcd=data['pcd']
+                )
+                logger.info('Novo colaborador cadastrado: %s', novo_colaborador)
+                return JsonResponse({'status': 'success', 'message': 'Colaborador criado com sucesso'})
+
+    elif request.method == 'GET':
+        colaboradores = Colaborador.objects.all().values(
+            'id', 'nome', 'matricula', 'cpf', 'cargo__descricao', 'status__descricao',
+            'admissao', 'desligamento', 'email', 'pcd'
+        )
+        logger.info('Consulta de todos os colaboradores realizada')
+        return JsonResponse(list(colaboradores), safe=False)
+    else:
+        logger.error('Método não permitido: %s', request.method)
+        return JsonResponse({'status': 'error', 'message': 'Método não permitido'}, status=405)
+
+
+
+<div id="RelatoriosGerenciaisForm" class="form-container">
+    <div class="subheader2">
+        <p>RELATÓRIOS GERENCIAIS</p>
+    </div>
+    <form>
+        <div class="form-row">
+            <div class="date-row">
+                <input type="date" id="dados ate o dia" name="dados ate o dia" placeholder="Dados até o dia">
+            </div>
+        </div>
+
+        <div class="form-row button-row">
+            <button type="submit">Pesquisar</button>
+        </div>
+    </form>
+</div>
+
+
+<div id="data-endpoint" data-url="{% url 'relatorio_gerencias' %}" style="display:none;"></div>
+
+<!--script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var url = document.getElementById('data-endpoint').dataset.url;
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+            // Processamento dos dados como anteriormente...
+        })
+            .catch(error => console.error('Erro ao buscar dados:', error));
+    });
+
+
+</script-->
+
+
+codigo js do andre:
+
+ document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById("cadastrarFuncionario").addEventListener("click", function() {
+            // Coletar os valores dos campos do formulário, verificando se os elementos existem antes de acessar suas propriedades
+            var empresaInput = document.getElementById("inputEmpresa");
+            var regionalInput = document.getElementById("inputRegional");
+            var unidadeInput = document.getElementById("inputUnidade");
+            var matriculaInput = document.getElementById("inputMatricula");
+            var nomeInput = document.getElementById("inputNome");
+            var cargoSelect = document.getElementById("selectCargo");
+            var admissaoInput = document.getElementById("inputAdmissao");
+            var cpfInput = document.getElementById("inputCPF");
+            var pcdSelect = document.getElementById("pcdSelect");
+            var situacaoSelect = document.getElementById("situacaoSelect");
+            var modopontoSelect = document.getElementById("modopontoSelect");
+            var desligamentoInput = document.getElementById("inputDesligamento");
+
+            // Checa se os elementos existem e então acessa suas propriedades 'value'
+            var empresa = empresaInput ? empresaInput.value : '';
+            var regional = regionalInput ? regionalInput.value : '';
+            var unidade = unidadeInput ? unidadeInput.value : '';
+            var matricula = matriculaInput ? matriculaInput.value : '';
+            var nome = nomeInput ? nomeInput.value : '';
+            var cargo = cargoSelect ? cargoSelect.value : '';
+            var admissao = admissaoInput ? formatDate(admissaoInput.value) : '';
+            var cpf = cpfInput ? cpfInput.value : '';
+            var pcd = pcdSelect ? pcdSelect.value : '';
+            var situacao = situacaoSelect ? situacaoSelect.value : '';
+            var modoponto = modopontoSelect ? modopontoSelect.value : '';
+            var desligamento = desligamentoInput ? formatDate(desligamentoInput.value) : '';
+
+            // Enviar os dados para o servidor via AJAX
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "{% url 'cadastrar_funcionario' %}", true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            // Obter o token CSRF e incluí-lo nos cabeçalhos da solicitação
+            var csrftoken = getCookie('csrftoken');
+            xhr.setRequestHeader('X-CSRFToken', csrftoken);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    console.log(response); // Exibir a resposta do servidor no console para depuração
+                }
+            };
+
+            var data = JSON.stringify({
+                empresa: empresa,
+                regional: regional,
+                unidade: unidade,
+                matricula: matricula,
+                nome: nome,
+                cargo: cargo,
+                admissao: admissao,
+                cpf: cpf,
+                pcd: pcd,
+                situacao: situacao,
+                modoponto: modoponto,
+                desligamento: desligamento
+            });
+            xhr.send(data);
+        });
+
+        // Função para obter o valor do cookie CSRF
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+
+
+    class CadastrarFuncionarioView(View):
+    def post(self, request, *args, **kwargs):
+        data = json.loads(request.body)
+
+        # Exclusão de um colaborador existente
+        if 'excluir' in data:
+            try:
+                colaborador_id = data.get('id')
+                colaborador = Colaborador.objects.get(id=colaborador_id)
+                colaborador.delete()
+                logger.info('Dados recebidos: %s', data)
+                logger.info('Colaborador excluído: ID %s', colaborador_id)
+                return JsonResponse({'mensagem': 'Colaborador excluído com sucesso!'}, status=204)
+            except json.JSONDecodeError:
+                logger.error('Erro na decodificação do JSON')
+                return JsonResponse({'mensagem': 'Formato de JSON inválido.'}, status=400)
+            except Colaborador.DoesNotExist:
+                logger.error('Erro ao processar a solicitação: %s', str(e))
+                return JsonResponse({'mensagem': 'Colaborador não encontrado.'}, status=404)
+
+        # Atualização de um colaborador existente
+        colaborador_id = data.get('id', None)
+        if colaborador_id:
+            try:
+                colaborador = Colaborador.objects.get(id=colaborador_id)
+                for field in ['nome', 'matricula', 'cpf', 'cargo', 'status', 'admissao', 'desligamento', 'email', 'pcd']:
+                    if field in data:
+                        setattr(colaborador, field, data[field])
+                colaborador.save()
+                logger.info('Colaborador atualizado: ID %s', colaborador_id)
+                return JsonResponse({'mensagem': 'Colaborador atualizado com sucesso!'})
+            except Colaborador.DoesNotExist:
+                return JsonResponse({'mensagem': 'Colaborador não encontrado.'}, status=404)
+
+        # Criação de novo colaborador
+        # Buscar ou criar Empresa, Regional e Unidade
+        empresa_nome = data.get('empresa')
+        empresa, _ = Empresa.objects.get_or_create(nome=empresa_nome)
+
+        regional_nome = data.get('regional')
+        regional, _ = Regional.objects.get_or_create(nome=regional_nome, empresa=empresa)
+
+        unidade_nome = data.get('unidade')
+        unidade, _ = Unidade.objects.get_or_create(nome=unidade_nome, regional=regional)
+
+        # Buscar ou criar Cargo
+        cargo_nome = data.get('cargo')
+        if not cargo_nome:
+            return JsonResponse({'mensagem': 'Nome do cargo é obrigatório!'}, status=400)
+        cargo = Cargo.objects.filter(nome=cargo_nome).first()
+        if not cargo:
+            cargo = Cargo.objects.create(nome=cargo_nome, unidade=unidade)
+            logger.info(f'Cargo criado: {cargo_nome}')
+
+        # Buscar ou criar Situação
+        status_nome = data.get('situacao')
+        if not status_nome:
+            return JsonResponse({'mensagem': 'Situação é obrigatória!'}, status=400)
+        status, _ = Situacao.objects.get_or_create(nome=status_nome, cargo=cargo)
+
+        # Validação da data de admissão
+        data_admissao = data.get('admissao')
+        if not data_admissao:
+            return JsonResponse({'mensagem': 'A data de admissão é obrigatória!'}, status=400)
+        try:
+            data_admissao = datetime.strptime(data_admissao, '%Y-%m-%d')
+        except ValueError:
+            return JsonResponse({'mensagem': 'Formato de data de admissão inválido. Use YYYY-MM-DD.'}, status=400)
+
+        # Validação opcional para a data de desligamento
+        data_desligamento = data.get('desligamento')
+        if data_desligamento:
+            try:
+                data_desligamento = datetime.strptime(data_desligamento, '%Y-%m-%d')
+            except ValueError:
+                return JsonResponse({'mensagem': 'Formato de data de desligamento inválido. Use YYYY-MM-DD.'},
+                                    status=400)
+
+        # Criar novo colaborador usando as datas validadas
+        novo_colaborador = Colaborador(
+            empresa=empresa,
+            regional=regional,
+            unidade=unidade,
+            matricula=data['matricula'],
+            nome=data['nome'],
+            cargo=cargo,
+            admissao=data_admissao,
+            cpf=data['cpf'],
+            pcd=data['pcd'],
+            status=status,
+            modo_ponto=data.get('modoponto'),
+            desligamento=data_desligamento,
+            email=data.get('email', None)
+        )
+        novo_colaborador.save()
+        logger.info('Novo colaborador cadastrado: %s', novo_colaborador)
+        return JsonResponse({'mensagem': 'Funcionário cadastrado com sucesso!'})
+
+    def get(self, request, *args, **kwargs):
+        colaboradores_list = Colaborador.objects.all().select_related('empresa', 'regional', 'unidade', 'cargo', 'status')
+        paginator = Paginator(colaboradores_list, 100)  # Paginando em lotes de 100
+
+        # Obtendo o número da página do parâmetro GET (querystring)
+        page_number = request.GET.get('page', 1)
+        colaboradores = paginator.get_page(page_number)
+
+        data = [
+            {
+                'id': colaborador.id,
+                'nome': colaborador.nome,
+                'matricula': colaborador.matricula,
+                'cpf': colaborador.cpf,
+                'cargo': colaborador.cargo.nome if colaborador.cargo else '',
+                'status': colaborador.status.nome if colaborador.status else '',
+                'admissao': colaborador.admissao.strftime('%d/%m/%Y') if colaborador.admissao else 'Não Definido',
+                'desligamento': colaborador.desligamento.strftime(
+                    '%d/%m/%Y') if colaborador.desligamento else 'Não Definido',
+                'email': colaborador.email,
+                'empresa': colaborador.empresa.nome if colaborador.empresa else '',
+                'regional': colaborador.regional.nome if colaborador.regional else '',
+                'unidade': colaborador.unidade.nome if colaborador.unidade else ''
+            }
+            for colaborador in colaboradores
+        ]
+        return JsonResponse({'data': data, 'has_next': colaboradores.has_next(), 'has_previous': colaboradores.has_previous(),
+                             'num_pages': paginator.num_pages}, safe=False)
+
+
 

@@ -1,5 +1,5 @@
 import pandas as pd
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.utils.decorators import method_decorator
 from jsonschema import ValidationError
 from loguru import logger
@@ -16,18 +16,17 @@ from .models import PendenteASO
 from .models import ImportUsuarioXLSX  # Importe o modelo ImportUsuarioXLSX
 from .forms import PasswordResetForm
 from .forms import ImportarDadosForm
-from .queries import importar_dados, ServicoPendenteASO, ObterDocumentosPendentes, CarregarASOAtivo, CarregarASOInativo, \
+from .queries import (importar_dados, ServicoPendenteASO, ObterDocumentosPendentes, CarregarASOAtivo, CarregarASOInativo, \
     calcular_porcentagens_documentos_obrigatorios_ativos, calcular_porcentagens_documentos_obrigatorios_inativos, \
-    ServicoPonto, calcular_porcentagens_ponto_ativos, calcular_porcentagens_ponto_inativos, \
-    calcular_porcentagens_obrigatorios_unidade_ativos, DocumentoVencidoService, ServicoValidadeDocumento, \
-    calcular_porcentagens_obrigatorios_unidade_inativos, documentos_a_vencer, \
-    DocumentoPendenciaQuery
+    ServicoPonto, calcular_porcentagens_ponto_ativos, calcular_porcentagens_ponto_inativos,
+    calcular_porcentagens_obrigatorios_unidade_ativos, DocumentoVencidoService, calcular_porcentagens_obrigatorios_unidade_inativos,
+                      DocumentoPendenciaQuery)
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.urls import reverse
 import json
 import requests
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from .models import GrupoDocumento
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordResetForm
@@ -35,7 +34,6 @@ from django.contrib.auth.views import PasswordResetDoneView
 from .models import DocumentoPendente
 from .forms import RelatoriosPendentesForm
 from .models import Situacao
-from django.http import JsonResponse
 from django.views import View
 from django.db.models import Count
 from .models import Hyperlinkpdf, Colaborador, TipoDocumento
@@ -46,7 +44,15 @@ from django.contrib.auth import authenticate, login
 from .models import Usuario
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.models import Group, Permission
+from .models import DomingosFeriados
+import logging
+from django.http import JsonResponse
 from django.forms.models import model_to_dict
+from django.utils import timezone
+from datetime import date, datetime
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from json import loads
+from django.utils.dateparse import parse_date
 
 
 #  ********* VIEWS para MENUS SUPERIORES  ************
@@ -62,7 +68,7 @@ def index(request):
     Returns:
         HttpResponse: Resposta HTTP renderizando a página 'documento/.html'.
     """
-    return render(request, 'documento/tela_login.html')
+    return render(request, 'documento/import_xlsx.html')
 
 @login_required
 def dossie(request):
@@ -76,13 +82,12 @@ def relatorios(request):
 def configuracao(request):
     return render(request, 'documento/configuracao.html')
 
-@login_required
-def dashboard(request):
-    return render(request, 'documento/dashboard.html')
 
-@login_required
-def tela_login(request):
-    return render(request, 'documento/tela_login.html')
+
+
+# @login_required
+# def tela_login(request):
+    # return render(request, 'documento/tela_login.html')
 
 #  ************  Views Para Telas Referente a aba DOSSIE ***********
 
@@ -167,12 +172,35 @@ class CarregarDadosView(View):
         return JsonResponse(serialized_colaboradores2, safe=False)
 
 
+
+class CarregarColaboradorSimplesView(View):
+    def get(self, request, *args, **kwargs):
+        colaboradores = Colaborador.objects.select_related('empresa', 'regional', 'unidade', 'cargo', 'status').all().values(
+            'empresa__nome', 'regional__nome', 'unidade__nome', 'cargo__nome', 'status__nome')
+
+        serialized_colaboradores = [
+            {
+                'empresa': colaborador['empresa__nome'],
+                'regional': colaborador['regional__nome'],
+                'unidade': colaborador['unidade__nome'],
+                'cargo': colaborador['cargo__nome'],
+                'situacao': colaborador['status__nome']
+            }
+            for colaborador in colaboradores
+        ]
+
+        return JsonResponse(serialized_colaboradores, safe=False)
+
+
 class CarregarColaboradorView(View):
     def get(self, request, *args, **kwargs):
-        colaboradores = Colaborador.objects.select_related('empresa', 'regional', 'unidade').all().values(
+        colaboradores = Colaborador.objects.select_related('empresa', 'regional', 'unidade', 'cargo', 'status').all().values(
             'id', 'nome', 'matricula', 'cpf', 'admissao', 'desligamento',
-            'empresa__nome', 'regional__nome', 'unidade__nome'
-        )
+            'empresa__nome', 'regional__nome', 'unidade__nome', 'cargo__nome', 'status__nome')
+
+        # Coletando os nomes das empresas
+        empresas_nomes = set(colaborador['empresa__nome'] for colaborador in colaboradores)
+        print(f"Empresas envolvidas: {', '.join(empresas_nomes)}")
 
         serialized_colaboradores = [
             {
@@ -182,6 +210,8 @@ class CarregarColaboradorView(View):
                 'cpf': colaborador['cpf'],
                 'admissao': colaborador['admissao'].strftime('%d/%m/%Y') if colaborador['admissao'] else '',
                 'desligamento': colaborador['desligamento'].strftime('%d/%m/%Y') if colaborador['desligamento'] else '',
+                'cargo': colaborador['cargo__nome'],
+                'situacao': colaborador['status__nome'],
                 'empresa': colaborador['empresa__nome'],
                 'regional': colaborador['regional__nome'],
                 'unidade': colaborador['unidade__nome']
@@ -192,12 +222,53 @@ class CarregarColaboradorView(View):
         return JsonResponse(serialized_colaboradores, safe=False)
 
 
+@method_decorator(csrf_protect, name='dispatch')
 class CarregarCargoView(View):
     def get(self, request, *args, **kwargs):
+        # logger.info("Recebido GET para carregar cargos")
         cargos = Cargo.objects.all()
         serialized_cargos = [{'id': cargo.id, 'nome': cargo.nome} for cargo in cargos]
+        # logger.info(f"Dados serializados: {serialized_cargos}")
         return JsonResponse(serialized_cargos, safe=False)
 
+    def post(self, request, *args, **kwargs):
+        data = json.loads(request.body)
+        nome = data.get('nome')
+        if not nome:
+            return HttpResponseBadRequest("Nome é obrigatório")
+        cargo = Cargo.objects.create(nome=nome)
+        # logger.info(f"Cargo criado: {cargo}")
+        return JsonResponse({'id': cargo.id, 'nome': cargo.nome}, status=201)
+
+    def put(self, request, *args, **kwargs):
+        data = json.loads(request.body)
+        cargo_id = data.get('id')
+        nome = data.get('nome')
+        if not cargo_id or not nome:
+            return HttpResponseBadRequest("ID e Nome são obrigatórios")
+        try:
+            cargo = Cargo.objects.get(id=cargo_id)
+            cargo.nome = nome
+            cargo.save()
+            # logger.info(f"Cargo editado: {cargo}")
+            return JsonResponse({'id': cargo.id, 'nome': cargo.nome})
+        except Cargo.DoesNotExist:
+            # logger.error("Cargo não encontrado")
+            return HttpResponseBadRequest("Cargo não encontrado")
+
+    def delete(self, request, *args, **kwargs):
+        data = json.loads(request.body)
+        cargo_id = data.get('id')
+        if not cargo_id:
+            return HttpResponseBadRequest("ID é obrigatório")
+        try:
+            cargo = Cargo.objects.get(id=cargo_id)
+            cargo.delete()
+            # logger.info(f"Cargo removido: {cargo_id}")
+            return JsonResponse({'id': cargo_id})
+        except Cargo.DoesNotExist:
+            # logger.error("Cargo não encontrado")
+            return HttpResponseBadRequest("Cargo não encontrado")
 
 class CarregarSituacoesView(View):
     def get(self, request, *args, **kwargs):
@@ -312,18 +383,24 @@ def get_hyperlinkpdf_data(request):
     return JsonResponse({'hyperlinkpdf_data': hyperlinkpdf_data})
 
 
+
 def get_documentos_info(request):
     # Recuperando todos os tipos de documentos e ordenando pelo campo 'codigo'
     tipos_documentos = TipoDocumento.objects.all().select_related('grupo_documento', 'hiperlink_documento').order_by('codigo')
 
+    # Prefetch relacionado aos documentos para otimizar consultas
+    documentos_prefetch = Prefetch('hyperlinkpdf_set', queryset=Hyperlinkpdf.objects.select_related('colaborador', 'documento'))
+
+    tipos_documentos = tipos_documentos.prefetch_related(documentos_prefetch)
+
     data = []
 
     for tipo in tipos_documentos:
-        documentos = Hyperlinkpdf.objects.filter(documento=tipo).select_related('colaborador', 'documento')
+        documentos = tipo.hyperlinkpdf_set.all()
 
         # Verificar se o Kit Admissional está presente para o colaborador
         kit_admissional_presente = Hyperlinkpdf.objects.filter(
-            colaborador__in=[doc.colaborador for doc in documentos],
+            colaborador__in=documentos.values_list('colaborador', flat=True),
             documento__codigo='146'
         ).exists()
 
@@ -358,7 +435,6 @@ def get_documentos_info(request):
         })
 
     return JsonResponse(data, safe=False)
-
 
 # *************  Views Para Telas Referente ao DASHBOARD **************
 
@@ -414,7 +490,9 @@ class DocumentosObrigatoriosInativosView(View):
 class DocumentosPontoAtivoView(View):
     def get(self, request, *args, **kwargs):
         percentuais = calcular_porcentagens_ponto_ativos()
+        print("Dados em DocumentosPontoAtivoView:", percentuais)  # Adicionando o print dos dados
         return JsonResponse(percentuais)
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class DocumentosPontoInativoView(View):
@@ -441,11 +519,7 @@ class AtualizarDocumentosPendentesView(View):
         return JsonResponse({'status': 'Atualização concluída com sucesso!'})
 
 
-# Configura o logger
-# logger = logging.getLogger(__name__)
-
-
-class ObrigatoriosPorUnidadeAtivo(View):
+"""class ObrigatoriosPorUnidadeAtivo(View):
     def get(self, request):
         documentos_obrigatorios = (
             DocumentoPendente.objects
@@ -525,39 +599,57 @@ class ObrigatoriosPorUnidadeAtivo(View):
             }
             lista_unidades.append(unidade_dict)
 
-        # logger.info(f"Lista final de unidades e pendências: {lista_unidades}")
+        logger.info(f"Lista final de unidades e pendências: {lista_unidades}")
 
         return JsonResponse(lista_unidades, safe=False)
 
-class ObrigatoriosPorUnidadeInativo(View):
+"""
+class ObrigatoriosPorUnidadeAtivo(View):
     def get(self, request):
+        # Filtra os colaboradores ativos
+        colaboradores_ativos = Colaborador.objects.filter(status__nome='Ativo')
+
+        # Calcula o número total de colaboradores ativos por unidade
+        total_colaboradores_por_unidade = colaboradores_ativos.values('unidade__nome').annotate(total=Count('id'))
+
+        # Cria um dicionário para fácil acesso ao total de colaboradores por unidade
+        total_colaboradores_dict = {item['unidade__nome']: item['total'] for item in total_colaboradores_por_unidade}
+
+        # Filtra os documentos pendentes obrigatórios de colaboradores ativos
         documentos_obrigatorios = (
-            DocumentoPendente.objects
-            .filter(obrigatorio=True, desligamento__isnull=False)
-            .select_related('unidade', 'tipo_documento', 'nome', 'unidade__regional', 'cargo')
-            .values(
-                'unidade__nome',
-                'unidade__regional__nome',
-                'tipo_documento__nome',
-                'nome__nome',
-                'nome__matricula',
-                'nome__cpf',
-                'cargo__nome',
-                'admissao',
-                'desligamento'  # Certifique-se de que 'desligamento' é o nome correto do campo
-            )
-            .annotate(quantidade=Count('id'))
-            .order_by('unidade__nome', 'tipo_documento__nome')
-        )
+    DocumentoPendente.objects
+    .filter(obrigatorio=True, situacao="Ativo")
+    .select_related('unidade', 'tipo_documento', 'nome', 'regional', 'cargo')
+    .values(
+        'unidade__nome',
+        'regional__nome',
+        'tipo_documento__nome',
+        'nome__nome',
+        'nome__matricula',
+        'nome__cpf',
+        'cargo__nome',
+        'admissao'
+    )
+    .annotate(quantidade=Count('nome'))
+    .order_by('unidade__nome', 'tipo_documento__nome')
+)
+
         obrigatorios_por_unidade = {}
+        total_documentos = 0
+
         for documento in documentos_obrigatorios:
             unidade_nome = documento['unidade__nome']
+            regional_nome = documento['regional__nome']
             tipo_documento_nome = documento['tipo_documento__nome']
+            quantidade = documento['quantidade']
+            total_documentos += quantidade
 
             if unidade_nome not in obrigatorios_por_unidade:
                 obrigatorios_por_unidade[unidade_nome] = {
-                    'regional': documento['unidade__regional__nome'],
+                    'regional': regional_nome,
                     'documentos': {},
+                    'total_pendentes': 0,
+                    'quantidade': 0  # Total de pendências por unidade
                 }
 
             if tipo_documento_nome not in obrigatorios_por_unidade[unidade_nome]['documentos']:
@@ -567,26 +659,41 @@ class ObrigatoriosPorUnidadeInativo(View):
                 }
 
             documento_info = obrigatorios_por_unidade[unidade_nome]['documentos'][tipo_documento_nome]
-            documento_info['quantidade'] += documento['quantidade']
+            documento_info['quantidade'] += quantidade
             documento_info['colaboradores'].append({
-                'regional': documento['unidade__regional__nome'],
-                'unidade': unidade_nome,  # Adicionar o nome da unidade
+                'regional': documento['regional__nome'],
+                'unidade': documento['unidade__nome'],
                 'cargo': documento['cargo__nome'],
                 'nome': documento['nome__nome'],
                 'matricula': documento['nome__matricula'],
                 'cpf': documento['nome__cpf'],
-                'admissao': documento['admissao'].strftime('%Y-%m-%d') if documento['admissao'] else None,
-                'desligamento': documento['desligamento'].strftime('%Y-%m-%d') if documento['desligamento'] else None
+                'admissao': documento['admissao']
             })
+            obrigatorios_por_unidade[unidade_nome]['quantidade'] += quantidade
 
-        for unidade_info in obrigatorios_por_unidade.values():
-            unidade_info['total_pendentes'] = sum(doc_info['quantidade'] for doc_info in unidade_info['documentos'].values())
+        # Calcula o total de pendências por unidade e a porcentagem
+        for unidade, unidade_info in obrigatorios_por_unidade.items():
+            total_pendentes = sum(doc_info['quantidade'] for doc_info in unidade_info['documentos'].values())
+            unidade_info['total_pendentes'] = total_pendentes
 
-        lista_unidades = [
-            {
+            total_colaboradores = total_colaboradores_dict.get(unidade, 0)
+            if total_colaboradores > 0:
+                percentual_pendencias = (total_pendentes / (total_colaboradores * len(unidade_info['documentos']))) * 100
+                unidade_info['percentual_pendencias'] = min(percentual_pendencias, 100)
+            else:
+                unidade_info['percentual_pendencias'] = 0
+
+            # Adicionando print para exibir a porcentagem de pendências por unidade
+            print(f"Unidade: {unidade}, Percentual de Pendências: {unidade_info['percentual_pendencias']:.1f}%")
+
+        # Prepara a lista de unidades para resposta JSON
+        lista_unidades = []
+        for unidade, info in obrigatorios_por_unidade.items():
+            unidade_dict = {
                 'regional': info['regional'],
                 'unidade': unidade,
                 'total_pendentes': info['total_pendentes'],
+                'percentual_pendencias': f"{info['percentual_pendencias']:.1f}%",
                 'documentos': [
                     {
                         'tipo_documento': doc_tipo,
@@ -596,9 +703,105 @@ class ObrigatoriosPorUnidadeInativo(View):
                     for doc_tipo, doc_info in info['documentos'].items()
                 ]
             }
-            for unidade, info in obrigatorios_por_unidade.items()
-        ]
-        # logger.info(f"Lista final de unidades e pendências: {lista_unidades}")
+            lista_unidades.append(unidade_dict)
+
+        return JsonResponse(lista_unidades, safe=False)
+
+
+
+
+class ObrigatoriosPorUnidadeInativo(View):
+    def get(self, request):
+        colaboradores_inativos = Colaborador.objects.filter(status__nome='Inativo')
+        total_colaboradores_por_unidade = colaboradores_inativos.values('unidade__nome').annotate(total=Count('id'))
+        total_colaboradores_dict = {item['unidade__nome']: item['total'] for item in total_colaboradores_por_unidade}
+
+        documentos_obrigatorios = (
+            DocumentoPendente.objects
+            .filter(obrigatorio=True, situacao="Inativo")
+            .select_related('unidade', 'tipo_documento', 'nome', 'regional', 'cargo')
+            .values(
+                'unidade__nome',
+                'regional__nome',
+                'tipo_documento__nome',
+                'nome__nome',
+                'nome__matricula',
+                'nome__cpf',
+                'cargo__nome',
+                'admissao'
+            )
+            .annotate(quantidade=Count('id'))
+            .order_by('unidade__nome', 'tipo_documento__nome')
+        )
+
+        obrigatorios_por_unidade = {}
+        total_documentos = 0
+
+        for documento in documentos_obrigatorios:
+            unidade_nome = documento['unidade__nome']
+            regional_nome = documento['regional__nome']
+            tipo_documento_nome = documento['tipo_documento__nome']
+            quantidade = documento['quantidade']
+            total_documentos += quantidade
+
+            if unidade_nome not in obrigatorios_por_unidade:
+                obrigatorios_por_unidade[unidade_nome] = {
+                    'regional': regional_nome,
+                    'documentos': {},
+                    'total_pendentes': 0,
+                    'quantidade': 0
+                }
+
+            if tipo_documento_nome not in obrigatorios_por_unidade[unidade_nome]['documentos']:
+                obrigatorios_por_unidade[unidade_nome]['documentos'][tipo_documento_nome] = {
+                    'quantidade': 0,
+                    'colaboradores': []
+                }
+
+            documento_info = obrigatorios_por_unidade[unidade_nome]['documentos'][tipo_documento_nome]
+            documento_info['quantidade'] += quantidade
+            documento_info['colaboradores'].append({
+                'regional': documento['regional__nome'],
+                'unidade': documento['unidade__nome'],
+                'cargo': documento['cargo__nome'],
+                'nome': documento['nome__nome'],
+                'matricula': documento['nome__matricula'],
+                'cpf': documento['nome__cpf'],
+                'admissao': documento['admissao']
+            })
+            obrigatorios_por_unidade[unidade_nome]['quantidade'] += quantidade
+
+        for unidade, unidade_info in obrigatorios_por_unidade.items():
+            total_pendentes = sum(doc_info['quantidade'] for doc_info in unidade_info['documentos'].values())
+            unidade_info['total_pendentes'] = total_pendentes
+
+            total_colaboradores = total_colaboradores_dict.get(unidade, 0)
+            if total_colaboradores > 0:
+                percentual_pendencias = (total_pendentes / (total_colaboradores * len(unidade_info['documentos']))) * 100
+                unidade_info['percentual_pendencias'] = min(percentual_pendencias, 100)
+            else:
+                unidade_info['percentual_pendencias'] = 0
+
+            print(f"Unidade INATIVO: {unidade}, Percentual de Pendências: {unidade_info['percentual_pendencias']:.1f}%")
+
+        lista_unidades = []
+        for unidade, info in obrigatorios_por_unidade.items():
+            unidade_dict = {
+                'regional': info['regional'],
+                'unidade': unidade,
+                'total_pendentes': info['total_pendentes'],
+                'percentual_pendencias': f"{info['percentual_pendencias']:.1f}%",
+                'documentos': [
+                    {
+                        'tipo_documento': doc_tipo,
+                        'quantidade': doc_info['quantidade'],
+                        'colaboradores': doc_info['colaboradores']
+                    }
+                    for doc_tipo, doc_info in info['documentos'].items()
+                ]
+            }
+            lista_unidades.append(unidade_dict)
+
         return JsonResponse(lista_unidades, safe=False)
 
 
@@ -661,9 +864,8 @@ class CarregarDocumentosVencidosView(View):
         return JsonResponse(documentos, safe=False)
 
 
-from django.utils import timezone
 
-class ListarDocumentosVencidosView(View):
+class ListarDocumentosSimplesView(View):
     def get(self, request):
         try:
             # Coletando apenas os documentos cuja data de vencimento já passou
@@ -673,7 +875,6 @@ class ListarDocumentosVencidosView(View):
                 'empresa',
                 'regional',
                 'unidade',
-                'colaborador',
                 'cargo',
                 'tipo_documento'
             )
@@ -681,6 +882,84 @@ class ListarDocumentosVencidosView(View):
             # Convertendo documentos para JSON
             data = []
             for doc in documentos:
+                doc_dict = {
+                    'empresa': doc.empresa.nome if doc.empresa else '',
+                    'regional': doc.regional.nome if doc.regional else '',
+                    'unidade': doc.unidade.nome if doc.unidade else '',
+                    'cargo': doc.cargo.nome if doc.cargo else '',
+                    'tipo_documento': doc.tipo_documento.nome if doc.tipo_documento else ''
+                }
+                data.append(doc_dict)
+                # Logando detalhes do documento
+                # logger.info(f'Documento processado: {doc_dict}')
+
+            return JsonResponse(data, safe=False)
+        except Exception as e:
+           #  logger.error('Erro ao listar documentos vencidos: %s', e)
+            return JsonResponse({'error': 'Não foi possível recuperar os documentos vencidos'}, status=500)
+
+
+
+
+class ListarDocumentosVencidosView(View):
+    def get(self, request):
+        try:
+            # Coletando os parâmetros de filtro
+            empresa = request.GET.get('empresa', None)
+            regional = request.GET.get('regional', None)
+            unidade = request.GET.get('unidade', None)
+            nome_colaborador = request.GET.get('nomeColaborador', None)
+            matricula = request.GET.get('matricula', None)
+            cpf = request.GET.get('cpf', None)
+            cargo = request.GET.get('cargo', None)
+            admissao = request.GET.get('admissao', None)
+            desligamento = request.GET.get('desligamento', None)
+            tipo_documento = request.GET.get('tipoDocumento', None)
+
+            # Coletando apenas os documentos cuja data de vencimento já passou
+            documentos = DocumentoVencido.objects.filter(
+                data_vencimento__lte=timezone.now()
+            ).select_related(
+                'empresa', 'regional', 'unidade', 'colaborador', 'cargo', 'tipo_documento'
+            )
+
+            # Aplicando os filtros
+            if empresa:
+                documentos = documentos.filter(empresa__nome=empresa)
+            if regional:
+                documentos = documentos.filter(regional__nome=regional)
+            if unidade:
+                documentos = documentos.filter(unidade__nome=unidade)
+            if nome_colaborador:
+                documentos = documentos.filter(colaborador__nome__icontains=nome_colaborador)
+            if matricula:
+                documentos = documentos.filter(colaborador__matricula=matricula)
+            if cpf:
+                documentos = documentos.filter(colaborador__cpf=cpf)
+            if cargo:
+                documentos = documentos.filter(cargo__nome=cargo)
+            if admissao:
+                documentos = documentos.filter(colaborador__admissao=parse_date(admissao))
+            if desligamento:
+                documentos = documentos.filter(colaborador__desligamento=parse_date(desligamento))
+            if tipo_documento:
+                documentos = documentos.filter(tipo_documento__nome=tipo_documento)
+
+            # Paginação
+            page = request.GET.get('page', 1)
+            per_page = request.GET.get('per_page', 10)
+            paginator = Paginator(documentos, per_page)
+
+            try:
+                documentos_paginados = paginator.page(page)
+            except PageNotAnInteger:
+                documentos_paginados = paginator.page(1)
+            except EmptyPage:
+                documentos_paginados = paginator.page(paginator.num_pages)
+
+            # Convertendo documentos para JSON
+            data = []
+            for doc in documentos_paginados:
                 doc_dict = model_to_dict(doc, exclude=['id'])
                 doc_dict.update({
                     'empresa': doc.empresa.nome if doc.empresa else '',
@@ -697,64 +976,167 @@ class ListarDocumentosVencidosView(View):
                     'data_vencimento': doc.data_vencimento.strftime('%d/%m/%Y') if doc.data_vencimento else 'Não Definido'
                 })
                 data.append(doc_dict)
-                # Logando detalhes do documento
-                # logger.info(f'Documento processado: {doc_dict}')
 
-            return JsonResponse(data, safe=False)
+            response = {
+                'data': data,
+                'page': documentos_paginados.number,
+                'num_pages': paginator.num_pages,
+                'total_documents': paginator.count
+            }
+
+            return JsonResponse(response, safe=False)
         except Exception as e:
-            logger.error('Erro ao listar documentos vencidos: %s', e)
             return JsonResponse({'error': 'Não foi possível recuperar os documentos vencidos'}, status=500)
 
 
+class ListarDocumentosVencerSimplesView(View):
+    def get(self, request):
+        try:
+            documentos = DocumentoVencido.objects.select_related(
+                'empresa', 'regional', 'unidade', 'cargo', 'tipo_documento'
+            ).filter(data_vencimento__gt=timezone.now())  # Filtra para incluir apenas documentos que ainda não venceram
 
-# Configure o logger para o seu módulo ou app
-# logger = logging.getLogger('documento')
+            data = []
+            for doc in documentos:
+                doc_dict = {
+                    'empresa': doc.empresa.nome if doc.empresa else '',
+                    'regional': doc.regional.nome if doc.regional else '',
+                    'unidade': doc.unidade.nome if doc.unidade else '',
+                    'cargo': doc.cargo.nome if doc.cargo else '',
+                    'tipo_documento': doc.tipo_documento.nome if doc.tipo_documento else '',
+                }
+                data.append(doc_dict)
+
+            return JsonResponse(data, safe=False)
+        except Exception as e:
+            #logger.error('Erro ao listar documentos a vencer: %s', e)
+            return JsonResponse({'error': 'Não foi possível recuperar os documentos a vencer'}, status=500)
+
 
 class ListarDocumentosaVencerView(View):
     def get(self, request):
         try:
-            # Coletando todos os documentos ativos
+            # Obtém o número da página da query string, padrão para 1 se não estiver presente
+            page_number = int(request.GET.get('page', 1))
+
             documentos = DocumentoVencido.objects.select_related(
-                'empresa',
-                'regional',
-                'unidade',
-                'colaborador',
-                'cargo',
-                'tipo_documento'
-            ).all()  # Removido filtro de documentos já vencidos
+                'empresa', 'regional', 'unidade', 'colaborador', 'cargo', 'tipo_documento'
+            ).filter(data_vencimento__gt=timezone.now())  # Filtra para incluir apenas documentos que ainda não venceram
 
-            # Chamando a função para calcular os documentos a vencer
-            vencimentos = documentos_a_vencer(documentos)
+            # Paginação dos resultados
+            paginator = Paginator(documentos, per_page=10)  # 10 documentos por página
+            page_obj = paginator.get_page(page_number)
 
-            # Preparando dados para resposta
             data = []
-            for periodo, docs in vencimentos.items():
-                for doc in docs:
-                    data.append(
-                        doc)  # Adicionando cada documento diretamente, já que 'documentos_a_vencer' retorna em formato JSON adequado
+            for doc in page_obj:
+                dias_para_vencer = (doc.data_vencimento - timezone.now().date()).days
 
-            return JsonResponse(data, safe=False)
+                doc_dict = model_to_dict(doc, exclude=['id'])
+                doc_dict.update({
+                    'empresa': doc.empresa.nome if doc.empresa else '',
+                    'regional': doc.regional.nome if doc.regional else '',
+                    'unidade': doc.unidade.nome if doc.unidade else '',
+                    'colaborador': doc.colaborador.nome if doc.colaborador else '',
+                    'cargo': doc.cargo.nome if doc.cargo else '',
+                    'tipo_documento': doc.tipo_documento.nome if doc.tipo_documento else '',
+                    'situacao': doc.situacao.descricao if hasattr(doc, 'situacao') and doc.situacao else 'Não Definido',
+                    'admissao': doc.colaborador.admissao.strftime('%d/%m/%Y') if doc.colaborador.admissao else 'Não Definido',
+                    'desligamento': doc.colaborador.desligamento.strftime('%d/%m/%Y') if doc.colaborador.desligamento else 'Não Definido',
+                    'obrigatorio': 'Sim' if doc.tipo_documento.obrigatorio else 'Não',
+                    'dta_documento': doc.dta_documento.strftime('%d/%m/%Y') if doc.dta_documento else 'Não Definido',
+                    'data_vencimento': doc.data_vencimento.strftime('%d/%m/%Y') if doc.data_vencimento else 'Não Definido',
+                    'dias_para_vencer': dias_para_vencer  # Adiciona os dias para vencer
+                })
+                data.append(doc_dict)
+
+            return JsonResponse({
+                'data': data,
+                'has_next': page_obj.has_next(),
+                'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None
+            }, safe=False)
         except Exception as e:
-            logger.error('Erro ao listar documentos a vencer: %s', e)
+            #logger.error('Erro ao listar documentos a vencer: %s', e)
             return JsonResponse({'error': 'Não foi possível recuperar os documentos a vencer'}, status=500)
 
+
+class GerarRelatorioGerencialView(View):
+
+    def get(self, request, *args, **kwargs):
+        # Listar as 10 unidades com menos pendências
+        unidades_com_menos_pendencias = (
+            DocumentoPendente.objects.values('unidade__nome')
+            .annotate(total_pendencias=Count('id'))
+            .order_by('total_pendencias')[:10]
+        )
+
+        # Listar as 10 empresas com menos pendências
+        empresas_com_menos_pendencias = (
+            DocumentoPendente.objects.values('empresa__nome')
+            .annotate(total_pendencias=Count('id'))
+            .order_by('total_pendencias')[:10]
+        )
+
+        # Converter as listas em JSON
+        response_data = {
+            'unidades_com_menos_pendencias': list(unidades_com_menos_pendencias),
+            'empresas_com_menos_pendencias': list(empresas_com_menos_pendencias)
+        }
+
+        return JsonResponse(response_data)
 
 # ************* Views que carregam os dados dos relatórios ************
 
 class CarregarRelatorioPendenteView(View):
-    def get(self, request, situacao=None, *args, **kwargs):
-        # Filtrando documentos com base na situação passada na URL, se fornecida
+    def get(self, request, *args, **kwargs):
+        # Capturar os parâmetros de filtro da requisição
+        empresa = request.GET.get('empresa', '')
+        regional = request.GET.get('regional', '')
+        unidade = request.GET.get('unidade', '')
+        nome = request.GET.get('nome', '').lower()
+        matricula = request.GET.get('matricula', '').lower()
+        cpf = request.GET.get('cpf', '').lower()
+        cargo = request.GET.get('cargo', '')
+        admissao = request.GET.get('admissao', '')
+        desligamento = request.GET.get('desligamento', '')
+        situacao = request.GET.get('situacao', '')
+        tipo_documento = request.GET.get('tipo_documento', '')
+
+        pendentes = DocumentoPendente.objects.select_related(
+            'empresa', 'regional', 'unidade', 'nome', 'cargo', 'tipo_documento'
+        )
+
+        # Aplicar os filtros
+        if empresa:
+            pendentes = pendentes.filter(empresa__nome=empresa)
+        if regional:
+            pendentes = pendentes.filter(regional__nome=regional)
+        if unidade:
+            pendentes = pendentes.filter(unidade__nome=unidade)
+        if nome:
+            pendentes = pendentes.filter(nome__nome__icontains=nome)
+        if matricula:
+            pendentes = pendentes.filter(matricula__icontains=matricula)
+        if cpf:
+            pendentes = pendentes.filter(cpf__icontains=cpf)
+        if cargo:
+            pendentes = pendentes.filter(cargo__nome=cargo)
+        if admissao:
+            pendentes = pendentes.filter(admissao=admissao)
+        if desligamento:
+            pendentes = pendentes.filter(desligamento=desligamento)
         if situacao:
-            pendentes = DocumentoPendente.objects.select_related(
-                'empresa', 'regional', 'unidade', 'nome', 'cargo', 'tipo_documento'
-            ).filter(situacao=situacao)
-        else:
-            pendentes = DocumentoPendente.objects.select_related(
-                'empresa', 'regional', 'unidade', 'nome', 'cargo', 'tipo_documento'
-            ).all()  # Se a situação não for fornecida, retornar todos os documentos pendentes
+            pendentes = pendentes.filter(situacao=situacao)
+        if tipo_documento:
+            pendentes = pendentes.filter(tipo_documento__nome=tipo_documento)
+
+        page = request.GET.get('page', 1)
+        items_per_page = request.GET.get('items_per_page', 8)
+
+        paginator = Paginator(pendentes, items_per_page)
+        current_page = paginator.get_page(page)
 
         serialized_pendentes = []
-        for pendente in pendentes:
+        for pendente in current_page:
             serialized_pendente = {
                 'id': pendente.id,
                 'nome': pendente.nome.nome,  # assumindo que Colaborador tem um campo 'nome'
@@ -772,10 +1154,43 @@ class CarregarRelatorioPendenteView(View):
             }
             serialized_pendentes.append(serialized_pendente)
 
+        response_data = {
+            'pendentes': serialized_pendentes,
+            'current_page': current_page.number,
+            'total_pages': paginator.num_pages,
+            'total_items': paginator.count
+        }
+
+        return JsonResponse(response_data, safe=False)
+
+
+class CarregarRelatorioPendenteSimplesView(View):
+    def get(self, request, situacao=None, *args, **kwargs):
+        # Filtrando documentos com base na situação passada na URL, se fornecida
+        if situacao:
+            pendentes = DocumentoPendente.objects.select_related(
+                'empresa', 'regional', 'unidade', 'cargo', 'tipo_documento'
+            ).filter(situacao=situacao)
+        else:
+            pendentes = DocumentoPendente.objects.select_related(
+                'empresa', 'regional', 'unidade', 'cargo', 'tipo_documento'
+            ).all()  # Se a situação não for fornecida, retornar todos os documentos pendentes
+
+        serialized_pendentes = []
+        for pendente in pendentes:
+            serialized_pendente = {
+                'empresa': pendente.empresa.nome,
+                'regional': pendente.regional.nome,
+                'unidade': pendente.unidade.nome,
+                'cargo': pendente.cargo.nome,  # assumindo que Cargo tem um campo 'nome'
+                'situacao': pendente.situacao,
+                'tipo_documento': pendente.tipo_documento.nome,  # Verifique se este campo está sendo acessado corretamente
+            }
+            serialized_pendentes.append(serialized_pendente)
+
         return JsonResponse(serialized_pendentes, safe=False)
 
-
-class CarregarRelatorioExistenteView(View):
+class CarregarRelatorioExistenteSimplesView(View):
     def get(self, request, *args, **kwargs):
         # Consulta otimizada com prefetch_related para carregar todos os dados relacionados
         pendentes = Hyperlinkpdf.objects.select_related(
@@ -788,7 +1203,54 @@ class CarregarRelatorioExistenteView(View):
         for pendente in pendentes:
             situacao = pendente.colaborador.status.nome  # Acessando o nome da situação através do colaborador
             pendente_data = {
-                # 'id': pendente.id,
+                'empresa': pendente.empresa.nome,
+                'regional': pendente.regional.nome,
+                'unidade': pendente.unidade.nome,
+                'cargo': pendente.cargo.nome,
+                'situacao': situacao,
+                'tipo_documento': pendente.documento.nome if pendente.documento else 'N/A'  # Verificação de None
+            }
+            if situacao in data:
+                data[situacao].append(pendente_data)
+
+        return JsonResponse(data, safe=False)
+
+
+class CarregarRelatorioExistenteView(View):
+    def get(self, request, *args, **kwargs):
+        # Obtenha os parâmetros de filtro da solicitação GET
+        selected_empresa = request.GET.get('empresa')
+        selected_regional = request.GET.get('regional')
+        # Obtenha outros parâmetros de filtro, se necessário
+
+        # Consulte todos os registros com base nos parâmetros de filtro
+        pendentes = Hyperlinkpdf.objects.select_related(
+            'empresa', 'regional', 'unidade', 'cargo', 'documento'
+        ).prefetch_related(
+            'colaborador__status'  # Corrigido para refletir o relacionamento correto
+        )
+
+        if selected_empresa:
+            pendentes = pendentes.filter(empresa__nome=selected_empresa)
+        if selected_regional:
+            pendentes = pendentes.filter(regional__nome=selected_regional)
+        # Adicione outras condições de filtro, se necessário
+
+        # Paginação dos resultados
+        paginator = Paginator(pendentes, 10)  # Divida em páginas, 10 itens por página
+        page_number = request.GET.get('page')
+        try:
+            pendentes_paginados = paginator.page(page_number)
+        except PageNotAnInteger:
+            pendentes_paginados = paginator.page(1)  # Se 'page' não é um número, retorne a primeira página
+        except EmptyPage:
+            pendentes_paginados = paginator.page(paginator.num_pages)  # Se a página estiver fora do intervalo, retorne a última página
+
+        # Construa a resposta JSON
+        data = {'results': []}
+        for pendente in pendentes_paginados:
+            situacao = pendente.colaborador.status.nome  # Acessando o nome da situação através do colaborador
+            pendente_data = {
                 'nome': pendente.colaborador.nome,
                 'matricula': pendente.matricula,
                 'cpf': pendente.cpf,
@@ -802,19 +1264,123 @@ class CarregarRelatorioExistenteView(View):
                 'documento': pendente.documento.nome,
                 'obrigatorio': pendente.documento.obrigatorio
             }
-            if situacao in data:
-                data[situacao].append(pendente_data)
+            data['results'].append(pendente_data)
 
         return JsonResponse(data, safe=False)
 
 
-class CarregarRelatorioPendenteASOView(View):
+class DomingosFeriadosExistenteView(View):
+    def get(self, request, *args, **kwargs):
+        if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+            return JsonResponse({'error': 'Request must be AJAX and GET'}, status=400)
+
+        empresa_id = request.GET.get('empresa_id')
+        regional_id = request.GET.get('regional_id')
+        loja = request.GET.get('loja')
+        data_str = request.GET.get('data')
+
+        query = DomingosFeriados.objects.all()
+        if empresa_id:
+            query = query.filter(empresa_id=empresa_id)
+        if regional_id:
+            query = query.filter(regional_id=regional_id)
+        if loja:
+            query = query.filter(loja__icontains=loja)
+        if data_str:
+            data = parse_date(data_str) # type: ignore
+            if data:
+                query = query.filter(data_documento=data)
+            else:
+                # logger.error('Data fornecida é inválida: %s', data_str)
+                return JsonResponse({'error': 'Invalid date format'}, status=400)
+
+        query = query.select_related('empresa', 'regional')
+
+        data = [{
+            'id': item.id,
+            'empresa': item.empresa.nome if item.empresa else '',
+            'regional': item.regional.nome if item.regional else '',
+            'loja': item.loja,
+            'data': item.data_documento or '',
+            'nome_documento': item.nome_documento or '',
+            'link_documento': item.link_documento or '',
+            'data_upload': item.data_upload.strftime('%Y-%m-%d') if item.data_upload else ''
+        } for item in query]
+
+        # logger.info('Os dados dos Domingos e feriados: %s', data)
+
+        return JsonResponse(data, safe=False)
+
+class CarregarRelatorioPendenteASOSimplesView(View):
     def get(self, request, *args, **kwargs):
         pendentes = PendenteASO.objects.select_related(
-            'empresa', 'regional', 'unidade', 'nome', 'cargo', 'tipo_aso', 'status'
+            'empresa', 'regional', 'unidade', 'cargo', 'tipo_aso', 'status'
         )
         serialized_pendentes = []
         for pendente in pendentes:
+            serialized_pendente = {
+                'empresa': pendente.empresa.nome if pendente.empresa else 'N/A',
+                'regional': pendente.regional.nome if pendente.regional else 'N/A',
+                'unidade': pendente.unidade.nome if pendente.unidade else 'N/A',
+                'cargo': pendente.cargo.nome if pendente.cargo else 'N/A',
+                'situacao': pendente.status.nome if pendente.status else 'N/A',
+                'tipo_documento': pendente.tipo_aso.nome if pendente.tipo_aso else 'N/A',
+            }
+            serialized_pendentes.append(serialized_pendente)
+
+        return JsonResponse(serialized_pendentes, safe=False)
+
+
+class CarregarRelatorioPendenteASOView(View):
+    def get(self, request, *args, **kwargs):
+        # Obtendo parâmetros de filtro da requisição
+        empresa = request.GET.get('empresa', '')
+        regional = request.GET.get('regional', '')
+        unidade = request.GET.get('unidade', '')
+        cargo = request.GET.get('cargo', '')
+        status = request.GET.get('status', '')
+        tipo_documento = request.GET.get('tipo_documento', '')
+        nome = request.GET.get('nome', '').lower()
+        matricula = request.GET.get('matricula', '').lower()
+        cpf = request.GET.get('cpf', '').lower()
+        admissao = request.GET.get('admissao', '')
+        desligamento = request.GET.get('desligamento', '')
+
+        pendentes = PendenteASO.objects.select_related(
+            'empresa', 'regional', 'unidade', 'nome', 'cargo', 'tipo_aso', 'status'
+        ).all()
+
+        # Aplicando filtros
+        if empresa:
+            pendentes = pendentes.filter(empresa__nome=empresa)
+        if regional:
+            pendentes = pendentes.filter(regional__nome=regional)
+        if unidade:
+            pendentes = pendentes.filter(unidade__nome=unidade)
+        if cargo:
+            pendentes = pendentes.filter(cargo__nome=cargo)
+        if status:
+            pendentes = pendentes.filter(status__nome=status)
+        if tipo_documento:
+            pendentes = pendentes.filter(tipo_aso__nome=tipo_documento)
+        if nome:
+            pendentes = pendentes.filter(nome__nome__icontains=nome)
+        if matricula:
+            pendentes = pendentes.filter(matricula__icontains=matricula)
+        if cpf:
+            pendentes = pendentes.filter(cpf__icontains=cpf)
+        if admissao:
+            pendentes = pendentes.filter(admissao=admissao)
+        if desligamento:
+            pendentes = pendentes.filter(desligamento=desligamento)
+
+        # Paginação
+        page_number = request.GET.get('page', 1)
+        paginator = Paginator(pendentes, 10)  # 10 itens por página
+        page_obj = paginator.get_page(page_number)
+
+        serialized_pendentes = []
+        for pendente in page_obj:
             serialized_pendente = {
                 'id': pendente.id,
                 'nome': pendente.nome.nome if pendente.nome else 'N/A',
@@ -832,16 +1398,48 @@ class CarregarRelatorioPendenteASOView(View):
             }
             serialized_pendentes.append(serialized_pendente)
 
-        return JsonResponse(serialized_pendentes, safe=False)
+        response = {
+            'pendentes': serialized_pendentes,
+            'has_next': page_obj.has_next(),
+            'has_previous': page_obj.has_previous(),
+            'page_number': page_obj.number,
+            'num_pages': paginator.num_pages,
+        }
 
-class ListarCartaoPontoInexistenteView(View):
+        return JsonResponse(response)
+
+
+class ListarCartaoPontoInexistenteSimplesView(View):
     def get(self, request, *args, **kwargs):
-
         cartoes = CartaoPontoInexistente.objects.select_related(
-            'empresa', 'regional', 'unidade', 'colaborador', 'status'
+            'empresa', 'regional', 'unidade', 'status'
         ).all()
         serialized_cartoes = []
         for cartao in cartoes:
+            serialized_cartao = {
+                'empresa': cartao.empresa.nome if cartao.empresa else 'N/A',
+                'regional': cartao.regional.nome if cartao.regional else 'N/A',
+                'unidade': cartao.unidade.nome if cartao.unidade else 'N/A',
+                'status': cartao.status.nome if cartao.status else 'N/A'
+            }
+            serialized_cartoes.append(serialized_cartao)
+
+        return JsonResponse(serialized_cartoes, safe=False)
+
+
+class ListarCartaoPontoInexistenteView(View):
+    def get(self, request, *args, **kwargs):
+        cartoes = CartaoPontoInexistente.objects.select_related(
+            'empresa', 'regional', 'unidade', 'colaborador', 'status'
+        ).all()
+        
+        # Adicionar paginação
+        page_number = request.GET.get('page', 1)
+        paginator = Paginator(cartoes, 10)  # 10 itens por página
+        page_obj = paginator.get_page(page_number)
+        
+        serialized_cartoes = []
+        for cartao in page_obj:
             serialized_cartao = {
                 'id': cartao.id,
                 'empresa': cartao.empresa.nome if cartao.empresa else 'N/A',
@@ -858,8 +1456,15 @@ class ListarCartaoPontoInexistenteView(View):
             }
             serialized_cartoes.append(serialized_cartao)
 
-        return JsonResponse(serialized_cartoes, safe=False)
+        response = {
+            'cartoes': serialized_cartoes,
+            'has_next': page_obj.has_next(),
+            'has_previous': page_obj.has_previous(),
+            'page_number': page_obj.number,
+            'num_pages': paginator.num_pages
+        }
 
+        return JsonResponse(response, safe=False)
 
 def buscar_pendencias(request):
     data_escolhida = request.GET.get('data', None)
@@ -869,6 +1474,60 @@ def buscar_pendencias(request):
     else:
         return JsonResponse({'error': 'Data não especificada'}, status=400)
 
+class CarregarRelatoriosGerenciaisView(View):
+    @staticmethod
+    def unidades_com_menos_pendencias():
+        unidades = (DocumentoPendente.objects
+                    .values('unidade__nome')
+                    .annotate(total_pendencias=Count('id'))
+                    .order_by('total_pendencias')[:10])
+
+        detalhes = {}
+        for unidade in unidades:
+            documentos = (DocumentoPendente.objects
+                          .filter(unidade__nome=unidade['unidade__nome'])
+                          .values('tipo_documento__nome')
+                          .annotate(total=Count('id'))
+                          .order_by('tipo_documento__nome'))
+            detalhes[unidade['unidade__nome']] = list(documentos)
+
+        return unidades, detalhes
+
+    @staticmethod
+    def empresas_com_menos_pendencias():
+        empresas = (DocumentoPendente.objects
+                    .values('empresa__nome')
+                    .annotate(total_pendencias=Count('id'))
+                    .order_by('total_pendencias')[:10])
+
+        detalhes = {}
+        for empresa in empresas:
+            documentos = (DocumentoPendente.objects
+                          .filter(empresa__nome=empresa['empresa__nome'])
+                          .values('tipo_documento__nome')
+                          .annotate(total=Count('id'))
+                          .order_by('tipo_documento__nome'))
+            detalhes[empresa['empresa__nome']] = list(documentos)
+
+        return empresas, detalhes
+
+    def get(self, request, *args, **kwargs):
+        unidades, detalhes_unidades = self.unidades_com_menos_pendencias()
+        empresas, detalhes_empresas = self.empresas_com_menos_pendencias()
+
+        data = {
+            'unidades': [{'nome': u['unidade__nome'], 'total_pendencias': u['total_pendencias']} for u in unidades],
+            'detalhes_unidades': detalhes_unidades,
+            'empresas': [{'nome': e['empresa__nome'], 'total_pendencias': e['total_pendencias']} for e in empresas],
+            'detalhes_empresas': detalhes_empresas
+        }
+        return JsonResponse(data)
+
+    def data_atual(request):
+        context = {
+            'data_atual': date.today().isoformat()
+        }
+        return render(request, 'documento/relatorios.html', context)
 
 # ***************       Views que apresentam o html do relatório ++++++++++++++++++++++++
 
@@ -1089,7 +1748,6 @@ class DocumentoExistenteListView(ListView):
             queryset = queryset.filter(data_documento__gte=data_documento)
 
         return queryset
-
 
 class PendenteASOListView(ListView):
     """
@@ -1412,10 +2070,10 @@ class DocumentoAVencerListView(ListView):
 
 class RelatorioGerencialListView(ListView):
     """
-    Exibe a lista de relatórios gerenciais.
+    Exibe a lista de documentos pendentes.
 
     Atributos:
-        model (Model): Modelo que será usado para carregar os dados (RelatorioGerencial).
+        model (Model): Modelo que será usado para carregar os dados (DocumentoPendente).
         template_name (str): Caminho para o template HTML que será usado para renderizar a view.
         context_object_name (str): Nome do objeto que será passado para o template.
 
@@ -1423,128 +2081,158 @@ class RelatorioGerencialListView(ListView):
         get_queryset (request): Retorna um QuerySet que será usado para carregar os dados.
     """
 
-    model = RelatorioGerencial
+    model = DocumentoPendente
     template_name = "documento/relatorios.html"
     context_object_name = "relatorios_gerenciais"
 
-    def get_queryset(self, request):
+    def get_queryset(self):
         """
-        Filtra os relatórios gerenciais por título, descrição, data de criação e data de atualização.
+        Filtra os documentos pendentes por empresa, regional, unidade, nome do colaborador, matrícula, CPF, cargo, admissão, desligamento, situação e tipo de documento.
 
         Argumentos:
             request: Objeto HttpRequest que contém informações sobre a requisição.
 
         Retorno:
-            QuerySet: QuerySet filtrado com os relatórios gerenciais.
+            QuerySet: QuerySet filtrado com os documentos pendentes.
         """
 
-        queryset = super().get_queryset(request)
+        queryset = super().get_queryset()
 
-        titulo = request.GET.get("titulo")
-        descricao = request.GET.get("descricao")
-        data_criacao = request.GET.get("data_criacao")
-        data_atualizacao = request.GET.get("data_atualizacao")
+        # Filtrando por campos que podem ser comuns para buscas
+        matricula = self.request.GET.get('matricula')
+        cpf = self.request.GET.get('cpf')
+        nome = self.request.GET.get('nome')
+        situacao = self.request.GET.get('situacao')
 
-        if titulo:
-            queryset = queryset.filter(titulo__icontains=titulo)
-
-        if descricao:
-            queryset = queryset.filter(descricao__icontains=descricao)
-
-        if data_criacao:
-            queryset = queryset.filter(data_criacao__gte=data_criacao)
-
-        if data_atualizacao:
-            queryset = queryset.filter(data_atualizacao__lte=data_atualizacao)
+        if matricula:
+            queryset = queryset.filter(matricula__icontains=matricula)
+        if cpf:
+            queryset = queryset.filter(cpf__icontains=cpf)
+        if nome:
+            queryset = queryset.filter(nome__nome__icontains=nome)
+        if situacao:
+            queryset = queryset.filter(situacao__icontains=situacao)
 
         return queryset
-
-
-def domingos_feriados_existente(request):
-    if request.method == 'GET':
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            empresa_id = request.GET.get('empresa_id')
-            if empresa_id:
-                regionais = Regional.objects.filter(empresa_id=empresa_id).values('id', 'nome')
-                logger.info(f'Regionais para empresa {empresa_id}: {list(regionais)}')
-            else:
-                regionais = Regional.objects.all().values('id', 'nome')
-                logger.info('Todas as regionais: {}'.format(list(regionais)))
-            return JsonResponse(list(regionais), safe=False)
-
-        form = PesquisaDomingosFeriadosForm(request.GET)
-        if form.is_valid():
-            documentos = DomingosFeriados.objects.all()
-            if form.cleaned_data['empresa']:
-                documentos = documentos.filter(empresa_id=form.cleaned_data['empresa'])
-                logger.info(f'Documentos filtrados por empresa {form.cleaned_data["empresa"]}')
-            if form.cleaned_data['regional']:
-                documentos = documentos.filter(empresa__regional_id=form.cleaned_data['regional'])
-                logger.info(f'Documentos filtrados por regional {form.cleaned_data["regional"]}')
-            data = serializers.serialize('json', documentos)
-            return JsonResponse(data, safe=False)
-
-        logger.error('Formulário inválido')
-        return JsonResponse({'error': 'Invalid form data'}, status=400)
-
-    empresas = Empresa.objects.all()
-    regionais = Regional.objects.all()
-    logger.info(f'Carregando empresas: {list(empresas.values("id", "nome"))}')
-    logger.info(f'Carregando regionais: {list(regionais.values("id", "nome"))}')
-    context = {'empresas': empresas, 'regionais': regionais}
-    return render(request, 'documento/relatorios.html', context)
 
 
 
 # **********   Views para a aba de Configurações **********
 
-@csrf_exempt
-def gerenciar_colaborador(request):
-    if request.method == 'POST':
+
+class CadastrarFuncionarioView(View):
+    def post(self, request, *args, **kwargs):
         data = json.loads(request.body)
+
+        # Exclusão de um colaborador existente
         if 'excluir' in data:
-            colaborador_id = data.get('id')
-            colaborador = Colaborador.objects.get(id=colaborador_id)
-            colaborador.delete()
-            return HttpResponse(status=204)
-        else:
-            colaborador_id = data.get('id', None)
-            if colaborador_id:
+            try:
+                colaborador_id = data.get('id')
                 colaborador = Colaborador.objects.get(id=colaborador_id)
-                # Atualiza os campos do colaborador com os novos valores recebidos
-                colaborador.nome = data.get('nome', colaborador.nome)
-                colaborador.matricula = data.get('matricula', colaborador.matricula)
-                colaborador.cpf = data.get('cpf', colaborador.cpf)
-                colaborador.cargo_id = data.get('cargo_id', colaborador.cargo_id)
-                colaborador.status_id = data.get('status_id', colaborador.status_id)
-                colaborador.admissao = data.get('admissao', colaborador.admissao)
-                colaborador.desligamento = data.get('desligamento', colaborador.desligamento)
-                colaborador.email = data.get('email', colaborador.email)
-                colaborador.pcd = data.get('pcd', colaborador.pcd)
+                colaborador.delete()
+                return JsonResponse({'mensagem': 'Colaborador excluído com sucesso!'}, status=204)
+            except Colaborador.DoesNotExist:
+                return JsonResponse({'mensagem': 'Colaborador não encontrado.'}, status=404)
+
+        # Atualização de um colaborador existente
+        colaborador_id = data.get('id', None)
+        if colaborador_id:
+            try:
+                colaborador = Colaborador.objects.get(id=colaborador_id)
+                for field in ['nome', 'matricula', 'cpf', 'cargo', 'status', 'admissao', 'desligamento', 'email', 'pcd']:
+                    if field in data:
+                        setattr(colaborador, field, data[field])
                 colaborador.save()
-                return JsonResponse({'status': 'success', 'message': 'Colaborador atualizado com sucesso'})
-            else:
-                # Cria um novo colaborador
-                novo_colaborador = Colaborador.objects.create(
-                    nome=data['nome'],
-                    matricula=data['matricula'],
-                    cpf=data['cpf'],
-                    cargo_id=data['cargo_id'],
-                    status_id=data['status_id'],
-                    admissao=data['admissao'],
-                    desligamento=data.get('desligamento'),
-                    email=data.get('email'),
-                    pcd=data['pcd']
-                )
-                return JsonResponse({'status': 'success', 'message': 'Colaborador criado com sucesso'})
-    elif request.method == 'GET':
-        colaboradores = Colaborador.objects.all().values(
-            'id', 'nome', 'matricula', 'cpf', 'cargo__descricao', 'status__descricao',
-            'admissao', 'desligamento', 'email', 'pcd'
+                return JsonResponse({'mensagem': 'Colaborador atualizado com sucesso!'})
+            except Colaborador.DoesNotExist:
+                return JsonResponse({'mensagem': 'Colaborador não encontrado.'}, status=404)
+
+        # Criação de novo colaborador
+        empresa_nome = data.get('empresa')
+        empresa, _ = Empresa.objects.get_or_create(nome=empresa_nome)
+
+        regional_nome = data.get('regional')
+        regional, _ = Regional.objects.get_or_create(nome=regional_nome, empresa=empresa)
+
+        unidade_nome = data.get('unidade')
+        unidade, _ = Unidade.objects.get_or_create(nome=unidade_nome, regional=regional)
+
+        cargo_nome = data.get('cargo')
+        if not cargo_nome:
+            return JsonResponse({'mensagem': 'Nome do cargo é obrigatório!'}, status=400)
+        cargo, _ = Cargo.objects.get_or_create(nome=cargo_nome, unidade=unidade)
+
+        status_nome = data.get('situacao')
+        if not status_nome:
+            return JsonResponse({'mensagem': 'Situação é obrigatória!'}, status=400)
+        status, _ = Situacao.objects.get_or_create(nome=status_nome, cargo=cargo)
+
+        data_admissao = data.get('admissao')
+        if not data_admissao:
+            return JsonResponse({'mensagem': 'A data de admissão é obrigatória!'}, status=400)
+        try:
+            data_admissao = datetime.strptime(data_admissao, '%Y-%m-%d')
+        except ValueError:
+            return JsonResponse({'mensagem': 'Formato de data de admissão inválido. Use YYYY-MM-DD.'}, status=400)
+
+        data_desligamento = data.get('desligamento')
+        if status_nome == 'Inativo':
+            if not data_desligamento:
+                return JsonResponse({'mensagem': 'Para status Inativo, a data de desligamento é obrigatória!'}, status=400)
+            try:
+                data_desligamento = datetime.strptime(data_desligamento, '%Y-%m-%d')
+            except ValueError:
+                return JsonResponse({'mensagem': 'Formato de data de desligamento inválido. Use YYYY-MM-DD.'}, status=400)
+        else:
+            data_desligamento = None  # Garantir que será nulo se não for Inativo
+
+        novo_colaborador = Colaborador(
+            empresa=empresa,
+            regional=regional,
+            unidade=unidade,
+            matricula=data['matricula'],
+            nome=data['nome'],
+            cargo=cargo,
+            admissao=data_admissao,
+            cpf=data['cpf'],
+            pcd=data['pcd'],
+            status=status,
+            modo_ponto=data.get('modoponto'),
+            desligamento=data_desligamento,
+            email=data.get('email', None)
         )
-        return JsonResponse(list(colaboradores), safe=False)
-    else:
-        return JsonResponse({'status': 'error', 'message': 'Método não permitido'}, status=405)
+        novo_colaborador.save()
+
+        return JsonResponse({'mensagem': 'Funcionário cadastrado com sucesso!'})
+
+    def get(self, request, *args, **kwargs):
+        colaboradores_list = Colaborador.objects.all().select_related('empresa', 'regional', 'unidade', 'cargo', 'status')
+        paginator = Paginator(colaboradores_list, 100)  # Paginando em lotes de 100
+
+        # Obtendo o número da página do parâmetro GET (querystring)
+        page_number = request.GET.get('page', 1)
+        colaboradores = paginator.get_page(page_number)
+
+        data = [
+            {
+                'id': colaborador.id,
+                'nome': colaborador.nome,
+                'matricula': colaborador.matricula,
+                'cpf': colaborador.cpf,
+                'cargo': colaborador.cargo.nome if colaborador.cargo else '',
+                'status': colaborador.status.nome if colaborador.status else '',
+                'admissao': colaborador.admissao.strftime('%d/%m/%Y') if colaborador.admissao else 'Não Definido',
+                'desligamento': colaborador.desligamento.strftime(
+                    '%d/%m/%Y') if colaborador.desligamento else 'Não Definido',
+                'email': colaborador.email,
+                'empresa': colaborador.empresa.nome if colaborador.empresa else '',
+                'regional': colaborador.regional.nome if colaborador.regional else '',
+                'unidade': colaborador.unidade.nome if colaborador.unidade else ''
+            }
+            for colaborador in colaboradores
+        ]
+        return JsonResponse({'data': data, 'has_next': colaboradores.has_next(), 'has_previous': colaboradores.has_previous(),
+                             'num_pages': paginator.num_pages}, safe=False)
 
 
 @csrf_exempt
@@ -1584,12 +2272,27 @@ def gerenciar_empresa(request):
                 return JsonResponse({'status': 'error', 'message': f'Erro de integridade ao salvar a empresa: {str(e)}'}, status=500)
             except Exception as e:
                 return JsonResponse({'status': 'error', 'message': f'Erro ao cadastrar empresa: {str(e)}'}, status=500)
+
     elif request.method == 'GET':
         empresas = Empresa.objects.all().values('id', 'nome')
         return JsonResponse(list(empresas), safe=False)
+
+    elif request.method == 'DELETE':
+        # Tratamento específico para DELETE
+        data = json.loads(request.body)
+        empresa_id = data.get('id', None)
+        if empresa_id:
+            try:
+                empresa = Empresa.objects.get(id=empresa_id)
+                empresa.delete()
+                return HttpResponse(status=204)
+            except Empresa.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Empresa não encontrada'}, status=404)
+        else:
+            return JsonResponse({'status': 'error', 'message': 'ID de empresa não fornecido'}, status=400)
+
     else:
         return JsonResponse({'status': 'error', 'message': 'Método não permitido'}, status=405)
-
 
 
 @csrf_exempt
@@ -1641,9 +2344,20 @@ def gerenciar_regional(request):
             'id', 'nome', 'empresa__nome'
         )
         return JsonResponse(list(regionais), safe=False)
+    elif request.method == 'DELETE':
+        data = json.loads(request.body)
+        regional_id = data.get('id', None)
+        if regional_id:
+            try:
+                regional = Regional.objects.get(id=regional_id)
+                regional.delete()
+                return HttpResponse(status=204)
+            except Regional.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Regional não encontrada'}, status=404)
+        else:
+            return JsonResponse({'status': 'error', 'message': 'ID da regional não fornecido'}, status=400)
     else:
         return JsonResponse({'status': 'error', 'message': 'Método não permitido'}, status=405)
-
 
 @csrf_exempt
 def gerenciar_unidade(request):
@@ -1689,15 +2403,71 @@ def gerenciar_unidade(request):
                 return JsonResponse({'status': 'error', 'message': f'Erro de integridade ao salvar a unidade: {str(e)}'}, status=500)
             except Exception as e:
                 return JsonResponse({'status': 'error', 'message': f'Erro ao cadastrar unidade: {str(e)}'}, status=500)
+    elif request.method == 'DELETE':
+        try:
+            data = json.loads(request.body)
+            unidade_id = data.get('id')
+            unidade = Unidade.objects.get(id=unidade_id)
+            unidade.delete()
+            return HttpResponse(status=204)
+        except Unidade.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Unidade não encontrada'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Erro ao excluir unidade: {str(e)}'}, status=500)
     elif request.method == 'GET':
-        unidades = Unidade.objects.select_related('regional').all().values(
-            'id', 'nome', 'regional__nome'
-        )
-        return JsonResponse(list(unidades), safe=False)
+        if 'regionais' in request.GET:
+            regionais = Regional.objects.all().values('id', 'nome')
+            return JsonResponse(list(regionais), safe=False)
+        else:
+            unidades = Unidade.objects.select_related('regional').all().values(
+                'id', 'nome', 'regional__nome'
+            )
+            return JsonResponse(list(unidades), safe=False)
     else:
         return JsonResponse({'status': 'error', 'message': 'Método não permitido'}, status=405)
 
+def get_tipo_documentos(request):
+    tipos_documentos = TipoDocumento.objects.all().select_related('grupo_documento').order_by('codigo')
 
+    data = []
+    for tipo in tipos_documentos:
+        data.append({
+            'tipo_documento_id': tipo.id,
+            'codigo': tipo.codigo,
+            'nome': tipo.nome,
+            'grupo_documento': tipo.grupo_documento.nome if tipo.grupo_documento else 'N/A',
+            'pcd': tipo.pcd,
+            'obrigatorio': tipo.obrigatorio,
+            'valor_legal': tipo.valor_legal,
+            'verifica_assinatura': tipo.verifica_assinatura,
+            'auditoria': tipo.auditoria,
+            'validade': tipo.validade,
+            'tipo_validade': tipo.tipo_validade,
+            'exibe_relatorio': tipo.exibe_relatorio,
+            'lista_situacao': tipo.lista_situacao,
+            'prioridade': tipo.prioridade,
+            'hiperlink_documento_id': tipo.hiperlink_documento.id if tipo.hiperlink_documento else 'N/A'
+        })
+
+    return JsonResponse(data, safe=False)
+
+def get_hyperlinkpdfs(request):
+    hyperlinkpdfs = Hyperlinkpdf.objects.select_related('colaborador', 'documento').all()
+
+    data = []
+    for doc in hyperlinkpdfs:
+        data.append({
+            'documento_nome': doc.documento.nome if doc.documento else 'Documento não especificado',
+            'colaborador_nome': doc.colaborador.nome if doc.colaborador else 'N/A',
+            'colaborador_id': doc.colaborador.id if doc.colaborador else 'N/A',
+            'caminho': doc.caminho,
+            'cpf': doc.cpf,
+            'matricula': doc.matricula,
+            'documento_codigo': doc.documento.codigo if doc.documento else 'N/A',
+            'colaborador_status': doc.colaborador.status if doc.colaborador else 'N/A'
+        })
+
+    return JsonResponse(data, safe=False)
 @csrf_exempt
 def cadastrar_tipodocumento(request):
     if request.method == 'POST':
@@ -1983,7 +2753,7 @@ class ImportarDadosView(View):
             if sucesso:
                 messages.success(request, "Dados importados com sucesso.")
                 # Considerar um redirecionamento após o sucesso para evitar reenvio do formulário
-                return redirect('alguma_url_de_sucesso')
+                # return redirect('documento/import_xlsx.html')
             else:
                 messages.error(request, mensagem)
         else:
@@ -2035,37 +2805,29 @@ def lista_funcionarios(request):
 
 
 # ******* 'Login', autenticação com Banco de dados, Logut e criação de 'login' ***********
-# @login_required
-import logging
 
-# Configura o logger
-logger = logging.getLogger('django')
-
-
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(csrf_protect, name='dispatch')
 class LoginView(View):
+    def get(self, request):
+        return render(request, 'documento/tela_login.html')
+
     def post(self, request):
         username = request.POST.get('username')
         password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
 
+        if not username or not password:
+            return JsonResponse({'error': 'Faltam credenciais'}, status=400)
+
+        user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            # logger.info(f'Usuário logado: {user.username}')
-
-            # Envia os dados do usuário como JSON para o frontend
-            response_data = {
-                'message': 'Login bem-sucedido',
-                'username': user.username
-            }
-
-            # print(request.POST)
-
-            # Redireciona o usuário para a tela de dashboard
-            return redirect('dashboard')
+            return redirect('dashboard')  # Redireciona para o dashboard após login bem-sucedido
         else:
-            # logger.info(f'Tentativa de login falhou para o usuário: {username}')
-            return JsonResponse({'error': 'Credenciais inválidas'}, status=400)
+            return render(request, 'documento/tela_login.html', {'error': 'Credenciais inválidas'})
+
+@login_required
+def dashboard(request):
+    return render(request, 'documento/dashboard.html')
 
 
 class AuthenticationViews(View):
@@ -2092,20 +2854,20 @@ class CustomPasswordResetDoneView(PasswordResetDoneView):
 
 class CustomLogoutView(View):
     def get(self, request, *args, **kwargs):
-        logger.info('GET request received for CustomLogoutView')
+        # logger.info('GET request received for CustomLogoutView')
         # Realize o logout do usuário (se necessário)
         # logout(request)  # Se desejar realizar o logout
 
         # Redirecione o usuário para a tela de login
-        return redirect('tela_login')  # Corrigido para usar o nome da URL
+        return redirect('documento/tela_login.html')  # Corrigido para usar o nome da URL
 
     def post(self, request, *args, **kwargs):
-        logger.info('POST request received for CustomLogoutView')
+        # logger.info('POST request received for CustomLogoutView')
         # Realize o logout do usuário (se necessário)
         # logout(request)  # Se desejar realizar o logout
 
         # Redirecione o usuário para a tela de login
-        return redirect('tela_login')  # Corrigido para usar o nome da URL
+        return redirect('documento/tela_login.html')  # Corrigido para usar o nome da URL
 
 
 class CheckUserLoggedOutMiddleware:
@@ -2124,56 +2886,53 @@ class CheckUserLoggedOutMiddleware:
 
 # User = get_user_model()
 
-@csrf_exempt
-def gerenciar_usuario(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        user_id = data.get('id', None)
+@method_decorator(csrf_exempt, name='dispatch')
+class GerenciarUsuarioView(View):
+    def post(self, request):
+        data = loads(request.body)
+        user_id = data.get('id')
 
         if 'excluir' in data and user_id:
-            # Processa a exclusão do usuário
             try:
-                usuario = User.objects.get(id=user_id)
+                usuario = Usuario.objects.get(id=user_id)
                 usuario.delete()
                 return JsonResponse({'status': 'success', 'message': 'Usuário excluído com sucesso'})
-            except User.DoesNotExist:
+            except Usuario.DoesNotExist:
                 return JsonResponse({'status': 'error', 'message': 'Usuário não encontrado'}, status=404)
 
         username = data.get('username')
-        email = data.get('email')
+        first_name = data.get('first_name')
         password = data.get('password')
-        is_superuser = data.get('is_superuser', False)
+        is_superuser = data.get('is_superuser', True)
+        is_active = data.get('is_active', False)
 
         if user_id:
-            # Edita um usuário existente
             try:
-                usuario = User.objects.get(id=user_id)
+                usuario = Usuario.objects.get(id=user_id)
                 usuario.username = username
-                usuario.email = email
+                usuario.first_name = first_name
+                usuario.is_active = is_active
                 if password:
                     usuario.set_password(password)
                 usuario.is_superuser = is_superuser
                 usuario.save()
                 return JsonResponse({'status': 'success', 'message': 'Usuário atualizado com sucesso'})
-            except User.DoesNotExist:
+            except Usuario.DoesNotExist:
                 return JsonResponse({'status': 'error', 'message': 'Usuário não encontrado'}, status=404)
         else:
-            # Cria um novo usuário
-            if User.objects.filter(username=username).exists():
+            if Usuario.objects.filter(username=username).exists():
                 return JsonResponse({'status': 'error', 'message': 'Este nome de usuário já está em uso'}, status=400)
-            if is_superuser and not request.user.is_superuser:
-                return JsonResponse({'status': 'error', 'message': 'Você não tem permissão para criar um superusuário'},
-                                    status=403)
-            user = User.objects.create_user(username=username, email=email, password=password,
-                                            is_superuser=is_superuser)
+            usuario = Usuario.objects.create_user(username=username, first_name=first_name, password=password, is_superuser=is_superuser)
             return JsonResponse({'status': 'success', 'message': 'Usuário criado com sucesso'})
-    elif request.method == 'GET':
-        # Listar usuários
-        usuarios = User.objects.all().values('id', 'username', 'email', 'is_superuser')
-        return JsonResponse(list(usuarios), safe=False)
-    else:
-        return JsonResponse({'status': 'error', 'message': 'Método não permitido'}, status=405)
 
+    def get(self, request):
+        usuarios = Usuario.objects.all().values('id', 'username', 'first_name', 'is_superuser')
+        return JsonResponse(list(usuarios), safe=False)
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.method not in ['GET', 'POST']:
+            return JsonResponse({'status': 'error', 'message': 'Método não permitido'}, status=405)
+        return super().dispatch(request, *args, **kwargs)
 
 # Constantes para menus
 MENUS = [
@@ -2215,11 +2974,3 @@ def listar_permissoes(request):
     return JsonResponse(permissoes, safe=False)
 
 
-def minha_visualizacao(request):
-    logger.debug('Esta é uma mensagem de log de depuração')
-    logger.info('Esta é uma mensagem de log de informação')
-    logger.warning('Esta é uma mensagem de log de aviso')
-    logger.error('Esta é uma mensagem de log de erro')
-    logger.critical('Esta é uma mensagem de log crítica')
-
-    return HttpResponse('OK')

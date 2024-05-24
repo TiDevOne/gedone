@@ -1,0 +1,219 @@
+
+        /* Definição da altura total da página HTML */
+        html {
+          height: 100%;
+        }
+
+        /* Estilo do corpo da página */
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: sans-serif;
+          /* Configuração do plano de fundo com imagem centralizada e cobrindo toda a tela */
+          background-image: linear-gradient(to left bottom, #4682b4, #829ec7, #b2bcd9, #dbdcec, #ffffff);
+          background-size: cover;
+        }
+
+        /* Estilo da caixa de login */
+        .login-box {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 400px;
+          padding: 40px;
+          transform: translate(-50%, -50%);
+          background: #0a304e; /* Cor fixa para a caixa de login */
+          box-sizing: border-box;
+          box-shadow: 0 15px 25px rgba(0, 0, 0, .6);
+          border-radius: 10px;
+          text-align: center;
+         
+        }
+
+        /* Estilo para o logotipo na caixa de login */
+        .login-box img {
+          width: auto;
+          height: 100px;
+          margin-bottom: 20px;
+        }
+
+        /* Estilo para o título "Login" na caixa de login */
+        .login-box h2 {
+          margin: 0 0 30px;
+          padding: 0;
+          color: #fff;
+          text-align: center;
+        }
+
+        /* Estilo para os campos de entrada e rótulos na caixa de login */
+        .login-box .user-box {
+          position: relative;
+        }
+
+        .login-box .user-box input {
+          width: 100%;
+          padding: 10px 0;
+          font-size: 16px;
+          color: #fff;
+          margin-bottom: 30px;
+          border: none;
+          border-bottom: 1px solid #fff;
+          outline: none;
+          background: transparent;
+        }
+
+        .login-box .user-box label {
+          position: absolute;
+          top: 0;
+          left: 0;
+          padding: 10px 0;
+          font-size: 16px;
+          color: #fff;
+          pointer-events: none;
+          transition: .5s;
+        }
+
+        
+
+    
+.login-box .user-box input:focus ~ label,
+.login-box .user-box input:valid ~ label {
+  top: -20px;
+  left: 0;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+
+
+ /* Estilos para campos preenchidos automaticamente */
+ input:-webkit-autofill,
+ input:-webkit-autofill:hover,
+ input:-webkit-autofill:focus,
+ input:-webkit-autofill:active {
+     transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s;
+     -webkit-transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s;
+     color: #fff !important;
+ }
+
+ .user-box {
+  position: relative;
+}
+
+.user-box .toggle-password {
+  position: absolute;
+  top: 40%;
+  right: 10px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #fff;
+}
+/* CSS para o modal */
+.modal {
+  display: none; /* Oculta o modal por padrão */
+  position: fixed; /* Permite rolar a página enquanto o modal está aberto */
+  z-index: 1; /* Define a ordem de empilhamento do modal */
+  left: 0;
+  top: 0;
+  width: 100%; /* Tamanho total */
+  height: 100%;
+  overflow: auto; /* Adiciona uma barra de rolagem se o conteúdo do modal for longo */
+  background-color: rgba(0, 0, 0, 0.645); /* Fundo semi-transparente */
+
+}
+
+/* Conteúdo do modal */
+.modal-content {
+  background-color: #0000007f; /* Cor de fundo do modal */
+  margin: 15% auto; /* Centraliza o modal na tela verticalmente e o posiciona 15% do topo */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 20%; /* Largura do modal */
+  border-radius: 8px;
+}
+
+/* Estilo do botão Fechar (x) */
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Estilo para os campos de texto no modal */
+input[type=text] {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
+}
+
+/* Estilo para o botão no modal */
+#submit {
+  background-color: #4CAF50; /* Cor de fundo */
+  color: white; /* Cor do texto */
+  padding: 14px 20px; /* Espaçamento interno */
+  margin: 8px 0; /* Margem */
+  border: none; /* Sem borda */
+  cursor: pointer; /* Cursor do mouse */
+  width: 100%; /* Largura total */
+}
+
+/* Estilo para o botão quando passar o mouse */
+#submit:hover {
+  opacity: 0.8;
+}
+.modal-content h2 {
+
+  color: #fff;
+  text-align: center;
+}
+/* Estilo do botão Acessar */
+.btn-acessar {
+  position: relative;
+  border: none;
+  color: #000;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.322);
+  outline: none;
+  color: #fff;
+  margin-top: 35px;
+  
+}
+.btn-acessar:after {
+  position: absolute;
+  content: "";
+  width: 0;
+  height: 100%;
+  top: 0;
+  left: 0;
+  direction: rtl;
+  z-index: -1;
+  box-shadow:
+    -7px -7px 20px 0px #fff9,
+    -4px -4px 5px 0px #fff9,
+    7px 7px 20px 0px #0002,
+    4px 4px 5px 0px #0001;
+  transition: all 0.3s ease;
+  color: #fff
+}
+.btn-acessar:hover {
+  color: #fff;
+}
+.btn-acessar:hover:after {
+  left: auto;
+  right: 0;
+  width: 100%;
+}
+.btn-acessar:active {
+  top: 2px;
+}

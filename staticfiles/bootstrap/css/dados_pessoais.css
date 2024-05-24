@@ -1,0 +1,566 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+/* Seu CSS atualizado */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Outfit', sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+
+header img {
+  height: 70px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 14px;
+  max-width: 50%;
+  text-align: center;
+  margin-left: 20%;
+}
+
+header p {
+  margin: 0;
+  font-size: 14px;
+  margin-left: 20%;
+}
+
+.window {
+  width: 70%; /* Define a largura como 900 pixels */
+
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin: auto;
+  margin-top: 150px; /* Para centralizar verticalmente */
+}
+
+
+.header {
+  color: #ffffff;
+  background-color: #4682B4;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centraliza verticalmente os elementos dentro do .header */
+  text-align: center; /* Centraliza horizontalmente o texto dentro do .header */
+  padding: 20px;
+}
+
+.title {
+  padding: 10px;
+  border-bottom: 1px solid #ddd; /* Adiciona uma borda na parte inferior */
+}
+
+
+.columns {
+  display: flex;
+  flex-direction: row; /* Distribui as colunas horizontalmente */
+  justify-content: space-around; /* Distribui o espaço entre as colunas */
+  align-items: center; /* Centraliza verticalmente os elementos */
+  width: 100%; /* Define a largura total */
+  max-width: 100%; /* Define uma largura máxima para evitar que as colunas se espalhem muito */
+}
+
+.columnTitle {
+  margin: 10px; /* Adiciona margem entre os títulos das colunas */
+}
+
+.column {
+  flex: 1;
+  padding: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  max-height: 600px; /* Altura máxima da tabela */
+  overflow-y: auto; /* Adiciona uma barra de rolagem vertical */
+  table-layout: fixed; /* Define o layout da tabela como fixo */
+
+}
+
+thead th {
+  background-color: #4682B4; /* Define a cor de fundo para os cabeçalhos */
+  color: white; /* Define a cor do texto para os cabeçalhos */
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+  width: 10%; /* Largura fixa para as células do cabeçalho */
+
+}
+
+tbody td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+  width: 10%;
+
+}
+
+/* Cores alternadas para as linhas da tabela */
+tbody tr:nth-child(odd) {
+  background-color: #6361632d;
+}
+tbody tr:hover {
+  background-color: #c4dff536;
+}
+
+/* Estilos para o elemento h1 */
+h2{
+  color: rgb(255, 255, 255); /* Altera a cor do texto para vermelho */
+  /*background-color: #030d3d;*/
+}
+
+
+/* Seu CSS atualizado */
+/* Adiciona a classe blue-bg para definir o estilo do cabeçalho azul */
+
+
+.table-title {
+  background-color: #4683b449;
+  color: #000000;
+  font-weight: bold;
+  height: 50px; /* Ajuste o valor conforme necessário */
+}
+
+
+
+.tipo-documento {
+  font-size: 12px; /* Tamanho de fonte menor */
+}
+
+/* Estilos para telas menores (como celulares) */
+@media screen and (max-width: 768px) {
+  .window {
+    width: 90%; /* Reduz a largura da janela */
+    margin-top: 100px; /* Ajusta a margem superior */
+  }
+
+  .header {
+    padding: 10px; /* Reduz o preenchimento */
+  }
+
+  .title {
+    padding: 5px; /* Reduz o preenchimento */
+  }
+
+  .columns {
+    flex-direction: column; /* Altera para uma disposição de coluna */
+  }
+
+  .columnTitle {
+    margin: 15px 0; /* Reduz a margem */
+  }
+
+}
+
+.DownloadButton {
+  display: flex;
+  justify-content: flex-end; /* Alinha os botões à direita */
+  margin-top: 15px;
+}
+
+.DownloadButton button {
+  background-color: #4682B4;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 40px 15px ;
+  cursor: pointer;
+  margin: 0 5px; /* Adiciona margem entre os botões */
+}
+
+.DownloadButton button:hover {
+  background-color: #4683b486;
+}
+
+.DownloadButton #BaixarTodos {
+  margin-left: 80px; /* Adiciona espaço à esquerda do segundo botão */
+}
+/* Adiciona uma animação pulsar */
+@keyframes pulsate {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Aplica a animação de pulsar ao botão Compliance */
+.DownloadButton #ComplianceButton {
+  animation: pulsate 2s infinite; /* Repete a animação infinitamente */
+}
+
+/* Adaptação para telas menores */
+@media screen and (max-width: 768px) {
+  .DownloadButton {
+    flex-direction: column; /* Altera a direção para empilhamento vertical */
+    align-items: flex-end; /* Alinha os botões à direita */
+  }
+
+  .DownloadButton button {
+    margin: 5px 0; /* Adiciona margem entre os botões empilhados */
+  }
+}
+
+/* Estilos para a janela modal */
+.modal-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Fundo preto com transparência */
+  backdrop-filter: blur(5px); /* Desfoca o conteúdo por trás */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /*overflow-y: auto;  Adiciona uma barra de rolagem vertical caso o conteúdo seja maior que o tamanho do card */
+  
+}
+@keyframes pulse {
+  0% {
+    box-shadow: 0 8px 12px rgba(255, 255, 255, 0.5); /* Sombras suaves com deslocamento vertical de 8px */
+  }
+  50% {
+    box-shadow: 0 12px 18px rgba(255, 255, 255, 0.8); /* Aumenta a intensidade da sombra */
+  }
+  100% {
+    box-shadow: 0 8px 12px rgba(255, 255, 255, 0.5); /* Volta à sombra inicial */
+  }
+}
+
+.modal-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-image: linear-gradient(to right top, #4682b4, #2594c1, #00a5c7, #00b6c6, #00c6c0, #16c9c3, #23cdc6, #2dd0c9, #4ec8d4, #71bed5, #8db5cc, #9fadbd);  width: 700px;
+  height: 650px;
+  animation: pulse 2s infinite; /* Aplica a animação pulse por 2 segundos repetidamente */
+}
+.modal-content > * {
+  margin: 30px; /* Adiciona uma margem de 20 pixels ao redor de todos os elementos filhos */
+}
+
+.card {
+  width: 300px;
+  height: 400px;
+  overflow-y: auto; /* Adiciona uma barra de rolagem vertical caso o conteúdo seja maior que o tamanho do card */
+  border-radius: 10px;
+  box-shadow: 0 0 10px #fff, 0 6px 10px #fff, 0 -6px 10px #fff; /* Sombra suave em todas as direções */
+  font-weight: bold;
+  color: black;
+}
+
+/* Estilizando a barra de rolagem */
+.card::-webkit-scrollbar {
+  width: 5px; /* Largura da barra de rolagem */
+}
+
+/* Estilizando o controle deslizante da barra de rolagem */
+.card::-webkit-scrollbar-thumb {
+  background-color: #4682B4; /* Cor do controle deslizante */
+  border-radius: 10px; /* Borda arredondada */
+}
+
+/* Estilizando a barra de rolagem quando o mouse estiver sobre ela */
+.card:hover::-webkit-scrollbar-thumb {
+  background-color: #4682B4 /* Cor do controle deslizante quando o mouse estiver sobre ele */
+}
+
+.card-header {
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+  width: 100%;
+  text-align: center;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.card-body {
+  padding: 10px;
+  width: 100%;
+  height: 100%;
+}
+
+#documentos-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+}
+
+#documentos-list li {
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+  width: 100%;
+}
+
+#documentos-list li:last-child {
+  border-bottom: none; /* Remove a borda inferior do último item da lista */
+}
+
+h3{
+  background-color: #4682B4;
+}
+
+.tituloCompliance h3{
+  text-align: center;
+  color: #fff;
+}
+
+.tituloCompliance button{
+  color: #fff;
+  background-color: #4682B4;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.tituloCompliance button:hover{
+  color: red;
+}
+
+.tituloCompliance p{
+  color: black;
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+}
+
+.tituloCompliance h1{
+  color: black;
+  font-size: 20px;
+  font-style: italic;
+  text-align: center;
+}
+
+.card1{
+  width: 30%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.space{
+  width: 20%;
+}
+
+.card1 h1{
+  color: green;
+}
+
+.card-header h2{
+  color: rgb(255, 255, 255); /* Altera a cor do texto para vermelho */
+  background-color: #4682B4;
+}
+
+.card1 img,
+.card1 p,
+.card1 h1 {
+  text-align: center;
+}
+
+.relatorio button{
+  text-align: right;
+  color: #fff;
+  cursor: pointer;
+  font-size: 80%;
+}
+
+.relatorio input,
+.relatorio textarea {
+  border: none;
+}
+
+/* Media queries para tornar os elementos responsivos */
+@media only screen and (max-width: 768px) {
+  .modal-content {
+    width: 90%;
+    height: 90%;
+  }
+
+  .card {
+    width: 90%;
+    height: auto;
+  }
+
+  .card1 {
+    width: 90%;
+  }
+
+  .space {
+    display: none;
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  .modal-content {
+    width: 95%;
+    height: 95%;
+  }
+
+  .card {
+    width: 95%;
+    height: auto;
+  }
+
+  .card1 {
+    width: 95%;
+  }
+}
+
+#sidebar {
+  position: fixed;
+  top: 0;
+  right: -250px; /* Define o sidebar inicialmente fora da tela */
+  width: 250px;
+  height: 100%;
+  background-color: #333;
+  transition: right 0.3s ease; /* Adiciona uma transição suave ao abrir e fechar o sidebar */
+}
+
+#sidebarContent {
+  padding: 20px;
+  color: white;
+}
+
+#closeSidebar {
+  background-color: #444;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+#openSidebar {
+  background-color: #4682B4;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#openSidebar i {
+  /* Estilos para o ícone dentro do botão */
+  font-size: 20px;
+}
+.Titlereturn {
+  color: #fff;
+  background-color: #4682B4;
+  border: 1px solid white; /* Adiciona uma borda branca de 1px */
+  display: flex; /* Usa flexbox para posicionar os elementos */
+  justify-content: space-between; /* Distribui os elementos igualmente ao longo do eixo principal */
+  align-items: center; /* Centraliza os elementos verticalmente */
+  padding: 10px; /* Adiciona um preenchimento interno para espaçamento */
+}
+
+.Titlereturn h1 {
+  margin: 0; /* Remove as margens padrão do título */
+}
+
+.Titlereturn button {
+  font-size: 30px;
+  background: none; /* Remove o fundo do botão */
+  border: none; /* Remove a borda do botão */
+  color: white; /* Define a cor do texto do botão */
+  cursor: pointer; /* Altera o cursor ao passar sobre o botão */
+}
+
+
+
+.obrigatorio-sim {
+  background-color: #ffe6e6; /* Vermelho claro */
+}
+/* Estilo específico para o ícone cloud-arrow-down-fill */
+.bi-cloud-arrow-down-fill {
+  font-size: 24px; /* Define o tamanho do ícone para 24 pixels */
+  color: #4682B4; /* Define a cor do ícone para azul */
+}
+
+/* Estilo específico para o ícone eye */
+.bi-eye {
+  font-size: 24px; /* Define o tamanho do ícone para 24 pixels */
+  color: #4682B4; /* Define a cor do ícone para azul */
+
+}
+
+.titulo-lado-esquerdo {
+  float: left; /* Alinha o título à esquerda */
+}
+
+.Grupo{
+  float: right; /* Alinha o checkbox à direita */
+  padding: 0 10px;
+  background-color: #4682B4;
+  color: white;
+  border-radius: 40px  ;
+  cursor: pointer;
+
+}
+.table-title td {
+  padding-left: 40px; /* Adiciona margem à esquerda */
+  padding-right: 30px; /* Adiciona margem à direita */
+}
+
+
+.loader {
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #3498db;
+  width: 120px;
+  height: 120px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+tr.linha-vermelho-claro {
+  background-color: #f8d7da; /* Vermelho claro */
+}
+
+
+#info-box {
+  position: fixed;
+  top: 90%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  border: 1px solid black;
+  background-color: #f4ff00;
+  z-index: 1000;
+  display: none; /* Inicialmente oculto */
+}
+#info-box button{
+  background-color: #4682B4;
+  color:#ffffff;
+}
+
+.checkbox{
+  font-size: 20%;
+}
+

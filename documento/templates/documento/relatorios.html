@@ -10,6 +10,10 @@
 
 {% block content %}
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     </script>
 
 
@@ -33,6 +37,12 @@
                 <a href="#">
                     <span class="icon"><i class="bi bi-record2-fill"></i></span>
                     <span class="txt-link">Documentos Existentes</span>
+                </a>
+            </li>
+            <li class="item-menu" data-target="domingosFeriadosForm">
+                <a href="#">
+                    <span class="icon"><i class="bi bi-record2-fill"></i></span>
+                    <span class="txt-link">Domingos e Feriados (Existentes)</span>
                 </a>
             </li>
 
@@ -167,6 +177,8 @@
             <div class="form-row button-row">
                 <button id="pesquisar" type="button">Pesquisar</button>
             </div>
+            <div id="loader" class="loader"></div>
+            
         </form>
     </div>
 
@@ -188,7 +200,7 @@
         });
         </script>
     <div class="sidebar">
-        <button class="close-btn">Fechar</button>
+        <button class="close-btn">X</button>
         <div class="table-container">
             <div class="subheader3">
                 <p>RELATÓRIOS</p>
@@ -199,23 +211,27 @@
                   <option value="csv">Exportar para CSV</option>
                   <option value="pdf">Exportar para PDF</option>
               </select>
-              <button onclick="authenticateDownload()"><i class="bi bi-download"></i></button>
+              <button onclick="authenticateDownload(document.getElementById('exportFormat').value)">
+                <i class="bi bi-download"></i>
+            </button>
             </div>
 
             <div class="search-container">
               <input type="text" id="searchInput" placeholder="Pesquisar...">
             </div>
-                <div class="rows-per-page">
-                    <label for="rowsPerPage">Linhas por página:</label>
-                    <select id="rowsPerPage" onchange="changeRowsPerPage()">
-                      <option value="8">8</option>
-                      <option value="10" selected>10</option>
-                      <option value="15">15</option>
-                      <option value="20">20</option>
-                      <option value="40">40</option>
-                      <option value="100">100</option>
-                  </select>
-                </div>
+            <div class="rows-per-page">
+                <select id="rowsPerPage" required onchange="changeRowsPerPage()">
+                    <option value="" disabled hidden>Linhas por página</option>
+                    <option value="8">8</option>
+                    <option value="10" selected>10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                    <option value="40">40</option>
+                    <option value="100">100</option>
+                </select>
+                <label for="rowsPerPage">Linhas por página:</label>
+            </div>
+              
             <table id="tabela-relatorio">
                 <thead>
                     <tr>
@@ -230,7 +246,6 @@
                         <th>Desligamento</th>
                         <th>Situação</th>
                         <th>Tipo de Documento</th>
-                        <th>Visualizar</th> <!-- Nova coluna -->
                     </tr>
                 </thead>
                 <tbody>
@@ -244,6 +259,7 @@
             </div>
         </div>
 
+
     </div>
 
 
@@ -253,7 +269,7 @@
 
         // Função para carregar os dados da API
         function carregarDadosAPI() {
-            fetch('{% url "carregar_relatorio_pendente_sem_situacao" %}')
+            fetch('{% url "relatorio_pendente_simples" %}')
                 .then(response => response.json())
                 .then(data => {
                     dadosAPI = data;
@@ -480,19 +496,11 @@
     </script>
 
 
+<script>
+    document.getElementById('pesquisar').addEventListener('click', function() {
+    // Mostrar a bolinha de carregamento
+    document.getElementById('loader').style.display = 'block';
 
-
-
-
-
-    <script>
-        // Variáveis para controlar a paginação
-        let currentPage = 1;
-        let totalPages = 1;
-        let itemsPerPage = 8; // Definindo itemsPerPage no escopo global
-
-
-        document.getElementById('pesquisar').addEventListener('click', function() {
     // Capturar os valores dos campos do formulário
     const empresa = document.getElementById('empresa').value;
     const regional = document.getElementById('Regional').value;
@@ -504,97 +512,203 @@
     const admissao = document.getElementById('admissao').value;
     const desligamento = document.getElementById('desligamento').value;
     const situacao = document.getElementById('situacao').value;
-    const tipoDocumento = document.getElementById('Tipo_de_Documento').value;
+    const tipo_documento = document.getElementById('Tipo_de_Documento').value;
 
-    // Chamar a URL para obter os dados
-    fetch('{% url "carregar_relatorio_pendente_sem_situacao" %}')
-        .then(response => response.json())
-        .then(data => {
-            // Filtrar os dados com base nos valores dos campos do formulário
-            const filteredData = data.filter(pendente =>
-                (empresa === '' || pendente.empresa === empresa) &&
-                (regional === '' || pendente.regional === regional) &&
-                (unidade === '' || pendente.unidade === unidade) &&
-                (nome === '' || pendente.nome.toLowerCase().includes(nome)) &&
-                (matricula === '' || pendente.matricula.toLowerCase().includes(matricula)) &&
-                (cpf === '' || pendente.cpf.toLowerCase().includes(cpf)) &&
-                (cargo === '' || pendente.cargo === cargo) &&
-                (admissao === '' || pendente.admissao === admissao) &&
-                (desligamento === '' || pendente.desligamento === desligamento) &&
-                (situacao === '' || pendente.situacao === situacao) &&
-                (tipoDocumento === '' || pendente.tipo_documento === tipoDocumento)
-            );
+    const itemsPerPage = 8;
+    let currentPage = 1;
 
-            // Atualizar a tabela com os dados filtrados
-            const totalItems = filteredData.length;
-            totalPages = Math.ceil(totalItems / itemsPerPage);
-            const start = (currentPage - 1) * itemsPerPage;
-            const end = start + itemsPerPage;
-
-            const tabela = document.getElementById('tabela-relatorio');
-            const tbody = tabela.getElementsByTagName('tbody')[0];
-            tbody.innerHTML = ''; // Limpar qualquer conteúdo anterior na tabela
-
-            // Exibir os dados filtrados na tabela
-            for (let i = start; i < end && i < filteredData.length; i++) {
-                const pendente = filteredData[i];
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${pendente.empresa}</td>
-                    <td>${pendente.regional}</td>
-                    <td>${pendente.unidade}</td>
-                    <td>${pendente.nome}</td>
-                    <td>${pendente.matricula}</td>
-                    <td>${pendente.cpf}</td>
-                    <td>${pendente.cargo}</td>
-                    <td>${pendente.admissao}</td>
-                    <td>${pendente.desligamento}</td>
-                    <td>${pendente.situacao}</td>
-                    <td>${pendente.tipo_documento}</td>
-                    <td><i class="bi bi-search" onclick="visualizarDetalhes('${pendente.id}', '${pendente.empresa}', '${pendente.regional}', '${pendente.unidade}', '${pendente.nome}', '${pendente.matricula}', '${pendente.cpf}', '${pendente.cargo}', '${pendente.admissao}', '${pendente.desligamento}', '${pendente.situacao}', '${pendente.tipo_documento}')"></i></td> <!-- Ícone de visualização -->
-                `;
-                tbody.appendChild(row);
-            }
-
-            document.getElementById('page-info').innerText = ` ${currentPage}/${totalPages} `;
-
-            // Exibe a barra lateral após carregar os dados
-            document.querySelector('.sidebar').classList.add('active');
-        })
-        .catch(error => {
-            console.error('Erro ao carregar os dados:', error);
+    function fetchAndRenderData() {
+        const params = new URLSearchParams({
+            page: currentPage,
+            items_per_page: itemsPerPage,
+            empresa,
+            regional,
+            unidade,
+            nome,
+            matricula,
+            cpf,
+            cargo,
+            admissao,
+            desligamento,
+            situacao,
+            tipo_documento
         });
+
+        fetch(`{% url "carregar_relatorio_pendente_sem_situacao" %}?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                // Atualizar a tabela com os dados filtrados
+                const totalPages = data.total_pages;
+
+                const tabela = document.getElementById('tabela-relatorio');
+                const tbody = tabela.getElementsByTagName('tbody')[0];
+                tbody.innerHTML = ''; // Limpar qualquer conteúdo anterior na tabela
+
+                // Exibir os dados filtrados na tabela
+                data.pendentes.forEach(pendente => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${pendente.empresa}</td>
+                        <td>${pendente.regional}</td>
+                        <td>${pendente.unidade}</td>
+                        <td>${pendente.nome}</td>
+                        <td>${pendente.matricula}</td>
+                        <td>${pendente.cpf}</td>
+                        <td>${pendente.cargo}</td>
+                        <td>${pendente.admissao}</td>
+                        <td>${pendente.desligamento}</td>
+                        <td>${pendente.situacao}</td>
+                        <td>${pendente.tipo_documento}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('page-info').innerText = ` ${currentPage}/${totalPages} `;
+
+                // Esconder a bolinha de carregamento após carregar os dados
+                document.getElementById('loader').style.display = 'none';
+
+                // Exibe a barra lateral após carregar os dados
+                document.querySelector('.sidebar').classList.add('active');
+            })
+            .catch(error => {
+                console.error('Erro ao carregar os dados:', error);
+                // Certifique-se de esconder a bolinha de carregamento em caso de erro também
+                document.getElementById('loader').style.display = 'none';
+            });
+    }
+
+    fetchAndRenderData();
+
+    document.getElementById('previous-page').addEventListener('click', function() {
+        if (currentPage > 1) {
+            currentPage--;
+            fetchAndRenderData();
+        }
+    });
+
+    document.getElementById('next-page').addEventListener('click', function() {
+        if (currentPage < totalPages) {
+            currentPage++;
+            fetchAndRenderData();
+        }
+    });
 });
 
+document.querySelector('.close-btn').addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.remove('active');
+});
 
-        document.querySelector('.close-btn').addEventListener('click', function() {
-            document.querySelector('.sidebar').classList.remove('active');
-        });
+function visualizarDetalhes(id, empresa, regional, unidade, nome, matricula, cpf, cargo, admissao, desligamento, situacao, tipo_documento) {
+    const nomeColaborador = encodeURIComponent(nome); // Codifica o nome do colaborador para ser usado na URL
+    const url = `{% url 'dados_pessoais' %}?id=${id}&empresa=${empresa}&regional=${regional}&unidade=${unidade}&colaborador=${nomeColaborador}&matricula=${matricula}&cpf=${cpf}&cargo=${cargo}&admissao=${admissao}&desligamento=${desligamento}&situacao=${situacao}&tipo_documento=${tipo_documento}`;
+    window.location.href = url;
+}
 
-        document.getElementById('previous-page').addEventListener('click', function() {
-            if (currentPage > 1) {
-                currentPage--;
-                document.getElementById('pesquisar').click(); // Recarrega os dados da página anterior
-            }
-        });
+ </script>
 
-        document.getElementById('next-page').addEventListener('click', function() {
-            if (currentPage < totalPages) {
-                currentPage++;
-                document.getElementById('pesquisar').click(); // Recarrega os dados da próxima página
-            }
-        });
-
-        function visualizarDetalhes(id, empresa, regional, unidade, nome, matricula, cpf, cargo, admissao, desligamento, situacao, tipoDocumento) {
-            const nomeColaborador = encodeURIComponent(nome); // Codifica o nome do colaborador para ser usado na URL
-            const url = `{% url 'dados_pessoais' %}?id=${id}&empresa=${empresa}&regional=${regional}&unidade=${unidade}&colaborador=${nomeColaborador}&matricula=${matricula}&cpf=${cpf}&cargo=${cargo}&admissao=${admissao}&desligamento=${desligamento}&situacao=${situacao}&tipoDocumento=${tipoDocumento}`;
-            window.location.href = url;
+<script>
+    function authenticateDownload(format) {
+        // Aqui, você pode implementar qualquer lógica de autenticação necessária.
+        switch (format) {
+            case 'csv':
+                exportTableToCSV('relatorio.csv');
+                break;
+            case 'xlsx':
+                exportTableToXLSX('relatorio.xlsx');
+                break;
+            case 'pdf':
+                exportTableToPDF('relatorio.pdf');
+                break;
         }
+    }
+    
+    function exportTableToCSV(filename) {
+        var csv = [];
+        var rows = document.querySelectorAll("#tabela-relatorio tr");
+        
+        for (var i = 0; i < rows.length; i++) {
+            var row = [], cols = rows[i].querySelectorAll("td, th");
+            
+            for (var j = 0; j < cols.length; j++) 
+                row.push('"' + cols[j].innerText + '"');
+            
+            csv.push(row.join(","));        
+        }
+    
+        downloadCSV(csv.join("\n"), filename);
+    }
+    
+    function exportTableToXLSX(filename) {
+        var wb = XLSX.utils.book_new();
+        var ws = XLSX.utils.table_to_sheet(document.getElementById('tabela-relatorio'));
+        XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+    
+        // Write the workbook to a file
+        XLSX.writeFile(wb, filename);
+    }
+    
+    function exportTableToPDF(filename) {
+        const element = document.getElementById('tabela-relatorio');
+    
+        html2canvas(element).then((canvas) => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jspdf.jsPDF({
+                orientation: 'landscape',
+            });
+            const imgProps= pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(filename);
+        });
+    }
+    
+    function downloadCSV(csv, filename) {
+        var csvFile;
+        var downloadLink;
+    
+        // CSV file
+        csvFile = new Blob([csv], {type: "text/csv"});
+    
+        // Download link
+        downloadLink = document.createElement("a");
+    
+        // File name
+        downloadLink.download = filename;
+    
+        // Create a link to the file
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+    
+        // Hide download link
+        downloadLink.style.display = "none";
+    
+        // Add the link to DOM
+        document.body.appendChild(downloadLink);
+    
+        // Click download link
+        downloadLink.click();
+    
+        // Remove the link from DOM
+        document.body.removeChild(downloadLink);
+    }
+    </script>
+
+<script>
+    $(document).ready(function(){
+        $("#searchInput").on("keyup", function() {
+            var value = $(this).val().toLowerCase();
+            $("#tabela-relatorio tbody tr").filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+    
     </script>
 
 
-
-
+        <!-- existentes-->
 
 
         <div id="documentosExistentesForm" class="form-container">
@@ -696,30 +810,18 @@
     }
 
     // Função para abrir o sidebar e preencher a tabela com os dados da view
-    function openSidebarAndFillTable() {
+    function openSidebarAndFillTable(pageNumber) {
         // Selecionando a empresa, regional, unidade, nome do colaborador, matrícula do colaborador, CPF do colaborador, cargo do colaborador, data de admissão e data de desligamento do colaborador
         const selectedEmpresa = document.getElementById('empresaDocumentos').value;
         const selectedRegional = document.getElementById('regionalDocumentos').value;
-        const selectedUnidade = document.getElementById('unidadeDocumentos').value;
-        const nomeColaborador = document.getElementById('nomeDocumento').value.trim().toLowerCase(); // Convertendo para minúsculas e removendo espaços extras
-        const matriculaColaborador = document.getElementById('matriculaDocumento').value.trim(); // Removendo espaços extras
-        const cpfColaborador = document.getElementById('cpfDocumento').value.trim(); // Removendo espaços extras
-        const selectedCargo = document.getElementById('cargoDocumentos').value;
-        const admissaoColaborador = document.getElementById('admissaoDocumento').value; // Obtendo a data de admissão
-        const desligamentoColaborador = document.getElementById('desligamentoDocumento').value; // Obtendo a data de desligamento
-        const selectedSituacao = document.getElementById('situacaoDocumento').value; // Obtendo a situação selecionada
-        const selectedTipoDocumento = document.getElementById('tipoDocumento').value; // Obtendo o tipo de documento selecionado
+        // Obtenha outros valores de filtro, se necessário
 
-        // Convertendo a data de admissão e desligamento para objetos Date, se estiverem preenchidas
-        const admissaoColaboradorDate = admissaoColaborador ? parseDate(admissaoColaborador) : null;
-        const desligamentoColaboradorDate = desligamentoColaborador ? parseDate(desligamentoColaborador) : null;
-
-        // Verificando se um nome de colaborador foi inserido
-        const nomeFiltrado = nomeColaborador !== '';
+        const url = `{% url 'relatorio_existente_todos_sem_situacao' %}?page=${pageNumber}&empresa=${selectedEmpresa}&regional=${selectedRegional}`;
+        // Adicione outros parâmetros de filtro ao URL, se necessário
 
         // Fazendo uma requisição AJAX para a view
         const xhr = new XMLHttpRequest();
-        xhr.open('GET', "{% url 'relatorio_existente_todos_sem_situacao' %}", true); // Substitua '/url/da/view' pela URL correta da sua view
+        xhr.open('GET', url, true);
         xhr.onload = function () {
             if (xhr.status >= 200 && xhr.status < 300) {
                 const data = JSON.parse(xhr.responseText);
@@ -729,43 +831,23 @@
                 tbody.innerHTML = ''; // Limpa o conteúdo atual da tabela
 
                 // Iterando sobre os dados e preenchendo a tabela
-                for (const situacao in data) {
-                    if (data.hasOwnProperty(situacao)) {
-                        data[situacao].forEach(function (item) {
-                            // Verificando se a empresa, regional, unidade, nome do colaborador, matrícula do colaborador, CPF do colaborador, cargo do colaborador, data de admissão e data de desligamento do colaborador na linha da tabela correspondem aos valores selecionados e inseridos
-                            const nomeColaboradorValido = nomeFiltrado ? item.nome.toLowerCase().includes(nomeColaborador) : true;
-                            const matriculaColaboradorValida = matriculaColaborador !== '' ? item.matricula === matriculaColaborador : true;
-                            const cpfColaboradorValido = cpfColaborador !== '' ? item.cpf === cpfColaborador : true;
-                            const cargoColaboradorValido = selectedCargo !== '' ? item.cargo === selectedCargo : true;
-                            const admissaoColaboradorValida = admissaoColaborador ? datasIguais(parseDate(item.admissao), admissaoColaboradorDate) : true;
-                            const desligamentoColaboradorValido = desligamentoColaborador ? datasIguais(parseDate(item.desligamento), desligamentoColaboradorDate) : true;
-                            const situacaoValida = selectedSituacao !== '' ? item.situacao === selectedSituacao : true;
-                            const tipoDocumentoValido = selectedTipoDocumento !== '' ? item.documento === selectedTipoDocumento : true;
-
-                            if ((selectedEmpresa === '' || item.empresa === selectedEmpresa) &&
-                                (selectedRegional === '' || item.regional === selectedRegional) &&
-                                (selectedUnidade === '' || item.unidade === selectedUnidade) &&
-                                nomeColaboradorValido && matriculaColaboradorValida && cpfColaboradorValido && cargoColaboradorValido && admissaoColaboradorValida && desligamentoColaboradorValido && situacaoValida && tipoDocumentoValido) {
-                                const row = document.createElement('tr');
-                                row.innerHTML = `
-                                    <td>${item.empresa}</td>
-                                    <td>${item.regional}</td>
-                                    <td>${item.unidade}</td>
-                                    <td>${item.nome}</td>
-                                    <td>${item.matricula}</td>
-                                    <td>${item.cpf}</td>
-                                    <td>${item.cargo}</td>
-                                    <td>${item.admissao}</td>
-                                    <td>${item.desligamento}</td>
-                                    <td>${item.situacao}</td>
-                                    <td>${item.documento}</td>
-                                    <td><i class="bi bi-search"></td>
-                                `;
-                                tbody.appendChild(row);
-                            }
-                        });
-                    }
-                }
+                data.results.forEach(function (item) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.empresa}</td>
+                        <td>${item.regional}</td>
+                        <td>${item.unidade}</td>
+                        <td>${item.nome}</td>
+                        <td>${item.matricula}</td>
+                        <td>${item.cpf}</td>
+                        <td>${item.cargo}</td>
+                        <td>${item.admissao}</td>
+                        <td>${item.desligamento}</td>
+                        <td>${item.situacao}</td>
+                        <td>${item.documento}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
 
                 // Abrindo a sidebar após preencher a tabela
                 const sidebar = document.querySelector('.sidebar');
@@ -779,7 +861,17 @@
 
     // Adicionando evento de clique ao botão de pesquisar
     const pesquisarBtn = document.getElementById('pesquisarExistentes');
-    pesquisarBtn.addEventListener('click', openSidebarAndFillTable);
+    pesquisarBtn.addEventListener('click', function () {
+        openSidebarAndFillTable(1); // Comece da primeira página ao aplicar o filtro
+    });
+
+    // Adicione evento de clique ao botão de páginação, se necessário
+    const paginationBtns = document.querySelectorAll('.pagination-btn');
+    paginationBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            openSidebarAndFillTable(btn.dataset.page);
+        });
+    });
 
     // Função para visualizar o documento (substitua por sua lógica real)
     function visualizarDocumento(id) {
@@ -795,384 +887,400 @@
     // Adicionando evento de clique ao botão de fechar
     const closeBtn = document.querySelector('.close-btn');
     closeBtn.addEventListener('click', closeSidebar);
-
-    </script>
-
+</script>
 
 
 
-        <script>
-            $(document).ready(function() {
-                // Função para carregar as opções de empresas, regiões, unidades, cargos, situações e tipos de documento
-                function carregarOpcoes() {
-                    $.ajax({
-                        url: "{% url 'relatorio_existente_todos_sem_situacao' %}",
-                        type: 'GET',
-                        dataType: 'json',
-                        success: function(data) {
-                            // Criar conjuntos para armazenar empresas, regiões, unidades, cargos, situações e tipos de documento únicos
-                            var empresasSet = new Set();
-                            var regioesSet = new Set();
-                            var unidadesSet = new Set();
-                            var cargosSet = new Set();
-                            var situacoesSet = new Set();
-                            var tiposDocumentoSet = new Set();
-
-                            // Adicionar empresas, regiões, unidades, cargos, situações e tipos de documento únicos aos conjuntos
-                            Object.keys(data).forEach(function(status) {
-                                data[status].forEach(function(pendente) {
-                                    empresasSet.add(pendente.empresa);
-                                    regioesSet.add(pendente.regional);
-                                    unidadesSet.add(pendente.unidade);
-                                    cargosSet.add(pendente.cargo);
-                                    situacoesSet.add(pendente.situacao);
-                                    tiposDocumentoSet.add(pendente.documento);
-                                });
-                            });
-
-                            // Limpar as opções de empresas, regiões, unidades, cargos, situações e tipos de documento existentes
-                            $('#empresaDocumentos').empty().append('<option value="" disabled selected></option>');
-                            $('#regionalDocumentos').empty().append('<option value="" disabled selected></option>');
-                            $('#unidadeDocumentos').empty().append('<option value="" disabled selected></option>');
-                            $('#cargoDocumentos').empty().append('<option value="" disabled selected></option>');
-                            $('#situacaoDocumento').empty().append('<option value="" disabled selected></option>');
-                            $('#tipoDocumento').empty().append('<option value="" disabled selected></option>');
-
-                            // Adicionar as novas opções baseadas nas empresas únicas
-                            empresasSet.forEach(function(empresa) {
-                                $('#empresaDocumentos').append($('<option>', {
-                                    value: empresa,
-                                    text: empresa
-                                }));
-                            });
-
-                            // Adicionar as novas opções baseadas nas regiões únicas
-                            regioesSet.forEach(function(regional) {
-                                $('#regionalDocumentos').append($('<option>', {
-                                    value: regional,
-                                    text: regional
-                                }));
-                            });
-
-                            // Adicionar as novas opções baseadas nas unidades únicas
-                            unidadesSet.forEach(function(unidade) {
-                                $('#unidadeDocumentos').append($('<option>', {
-                                    value: unidade,
-                                    text: unidade
-                                }));
-                            });
-
-                            // Adicionar as novas opções baseadas nos cargos únicos
-                            cargosSet.forEach(function(cargo) {
-                                $('#cargoDocumentos').append($('<option>', {
-                                    value: cargo,
-                                    text: cargo
-                                }));
-                            });
-
-                            // Adicionar as novas opções baseadas nas situações únicas
-                            situacoesSet.forEach(function(situacao) {
-                                $('#situacaoDocumento').append($('<option>', {
-                                    value: situacao,
-                                    text: situacao
-                                }));
-                            });
-
-                            // Adicionar as novas opções baseadas nos tipos de documento únicos
-                            tiposDocumentoSet.forEach(function(tipoDocumento) {
-                                $('#tipoDocumento').append($('<option>', {
-                                    value: tipoDocumento,
-                                    text: tipoDocumento
-                                }));
-                            });
-                        },
-                        error: function() {
-                            // Em caso de erro, você pode lidar com isso aqui
-                            console.error('Erro ao carregar as empresas, regiões, unidades, cargos, situações e tipos de documento.');
-                        }
+<script>
+    $(document).ready(function() {
+        // Função para carregar as opções de empresas, regiões, unidades, cargos, situações e tipos de documento
+        function carregarOpcoes() {
+            $.ajax({
+                url: "{% url 'carregar_relatorio_existente_simples' %}",
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    // Criar conjuntos para armazenar empresas, regiões, unidades, cargos, situações e tipos de documento únicos
+                    var empresasSet = new Set();
+                    var regioesSet = new Set();
+                    var unidadesSet = new Set();
+                    var cargosSet = new Set();
+                    var situacoesSet = new Set();
+                    var tiposDocumentoSet = new Set();
+    
+                    // Adicionar empresas, regiões, unidades, cargos, situações e tipos de documento únicos aos conjuntos
+                    Object.keys(data).forEach(function(status) {
+                        data[status].forEach(function(pendente) {
+                            empresasSet.add(pendente.empresa);
+                            regioesSet.add(pendente.regional);
+                            unidadesSet.add(pendente.unidade);
+                            cargosSet.add(pendente.cargo);
+                            situacoesSet.add(pendente.situacao);
+                            tiposDocumentoSet.add(pendente.tipo_documento);
+                        });
                     });
-                }
-
-                // Chamar a função carregarOpcoes assim que a página é carregada
-                carregarOpcoes();
-
-                // Função para carregar informações relacionadas à empresa selecionada
-                $('#empresaDocumentos').on('change', function() {
-                    carregarInformacoesEmpresa();
-                });
-
-                // Função para carregar informações relacionadas à região selecionada
-                $('#regionalDocumentos').on('change', function() {
-                    carregarInformacoesRegional();
-                });
-
-                // Função para carregar informações relacionadas à unidade selecionada
-                $('#unidadeDocumentos').on('change', function() {
-                    carregarInformacoesUnidade();
-                });
-
-                // Função para carregar informações relacionadas ao cargo selecionado
-                $('#cargoDocumentos').on('change', function() {
-                    carregarInformacoesCargo();
-                });
-
-                // Função para carregar informações relacionadas à situação selecionada
-                $('#situacaoDocumento').on('change', function() {
-                    carregarInformacoesSituacao();
-                });
-
-                // Função para carregar informações relacionadas ao tipo de documento selecionado
-                $('#tipoDocumento').on('change', function() {
-                    carregarInformacoesTipoDocumento();
-                });
-
-                // Função para carregar informações relacionadas à empresa selecionada
-                function carregarInformacoesEmpresa() {
-                    var empresaSelecionada = $('#empresaDocumentos').val(); // Obter o valor da empresa selecionada
-                    if (empresaSelecionada) {
-                        $('#campoInformacaoEmpresa').val(empresaSelecionada); // Atualizar o valor do campo com a informação da empresa selecionada
-                    } else {
-                        $('#campoInformacaoEmpresa').attr('placeholder', 'Empresa'); // Definir o placeholder como 'Empresa' se nenhuma empresa for selecionada
-                    }
-                }
-
-                // Função para carregar informações relacionadas à região selecionada
-                function carregarInformacoesRegional() {
-                    var regionalSelecionada = $('#regionalDocumentos').val(); // Obter o valor da região selecionada
-                    if (regionalSelecionada) {
-                        $('#campoInformacaoRegional').val(regionalSelecionada); // Atualizar o valor do campo com a informação da região selecionada
-                    } else {
-                        $('#campoInformacaoRegional').attr('placeholder', 'Regional'); // Definir o placeholder como 'Regional' se nenhuma região for selecionada
-                    }
-                }
-
-                // Função para carregar informações relacionadas à unidade selecionada
-                function carregarInformacoesUnidade() {
-                    var unidadeSelecionada = $('#unidadeDocumentos').val(); // Obter o valor da unidade selecionada
-                    if (unidadeSelecionada) {
-                        $('#campoInformacaoUnidade').val(unidadeSelecionada); // Atualizar o valor do campo com a informação da unidade selecionada
-                    } else {
-                        $('#campoInformacaoUnidade').attr('placeholder', 'Unidade'); // Definir o placeholder como 'Unidade' se nenhuma unidade for selecionada
-                    }
-                }
-
-                // Função para carregar informações relacionadas ao cargo selecionado
-                function carregarInformacoesCargo() {
-                    var cargoSelecionado = $('#cargoDocumentos').val(); // Obter o valor do cargo selecionado
-                    if (cargoSelecionado) {
-                        $('#campoInformacaoCargo').val(cargoSelecionado); // Atualizar o valor do campo com a informação do cargo selecionado
-                    } else {
-                        $('#campoInformacaoCargo').attr('placeholder', 'Cargo'); // Definir o placeholder como 'Cargo' se nenhum cargo for selecionado
-                    }
-                }
-
-                // Função para carregar informações relacionadas à situação selecionada
-                function carregarInformacoesSituacao() {
-                    var situacaoSelecionada = $('#situacaoDocumento').val(); // Obter o valor da situação selecionada
-                    if (situacaoSelecionada) {
-                        $('#campoInformacaoSituacao').val(situacaoSelecionada); // Atualizar o valor do campo com a informação da situação selecionada
-                    } else {
-                        $('#campoInformacaoSituacao').attr('placeholder', 'Situação'); // Definir o placeholder como 'Situação' se nenhuma situação for selecionada
-                    }
-                }
-
-                // Função para carregar informações relacionadas ao tipo de documento selecionado
-                function carregarInformacoesTipoDocumento() {
-                    var tipoDocumentoSelecionado = $('#tipoDocumento').val(); // Obter o valor do tipo de documento selecionado
-                    if (tipoDocumentoSelecionado) {
-                        $('#campoInformacaoTipoDocumento').val(tipoDocumentoSelecionado); // Atualizar o valor do campo com a informação do tipo de documento selecionado
-                    } else {
-                        $('#campoInformacaoTipoDocumento').attr('placeholder', 'Tipo de Documento'); // Definir o placeholder como 'Tipo de Documento' se nenhum tipo de documento for selecionado
-                    }
+    
+                    // Limpar as opções de empresas, regiões, unidades, cargos, situações e tipos de documento existentes
+                    $('#empresaDocumentos').empty().append('<option value="" disabled selected></option>');
+                    $('#regionalDocumentos').empty().append('<option value="" disabled selected></option>');
+                    $('#unidadeDocumentos').empty().append('<option value="" disabled selected></option>');
+                    $('#cargoDocumentos').empty().append('<option value="" disabled selected></option>');
+                    $('#situacaoDocumento').empty().append('<option value="" disabled selected></option>');
+                    $('#tipoDocumento').empty().append('<option value="" disabled selected></option>');
+    
+                    // Adicionar as novas opções baseadas nas empresas únicas
+                    empresasSet.forEach(function(empresa) {
+                        $('#empresaDocumentos').append($('<option>', {
+                            value: empresa,
+                            text: empresa
+                        }));
+                    });
+    
+                    // Adicionar as novas opções baseadas nas regiões únicas
+                    regioesSet.forEach(function(regional) {
+                        $('#regionalDocumentos').append($('<option>', {
+                            value: regional,
+                            text: regional
+                        }));
+                    });
+    
+                    // Adicionar as novas opções baseadas nas unidades únicas
+                    unidadesSet.forEach(function(unidade) {
+                        $('#unidadeDocumentos').append($('<option>', {
+                            value: unidade,
+                            text: unidade
+                        }));
+                    });
+    
+                    // Adicionar as novas opções baseadas nos cargos únicos
+                    cargosSet.forEach(function(cargo) {
+                        $('#cargoDocumentos').append($('<option>', {
+                            value: cargo,
+                            text: cargo
+                        }));
+                    });
+    
+                    // Adicionar as novas opções baseadas nas situações únicas
+                    situacoesSet.forEach(function(situacao) {
+                        $('#situacaoDocumento').append($('<option>', {
+                            value: situacao,
+                            text: situacao
+                        }));
+                    });
+    
+                    // Adicionar as novas opções baseadas nos tipos de documento únicos
+                    tiposDocumentoSet.forEach(function(tipoDocumento) {
+                        $('#tipoDocumento').append($('<option>', {
+                            value: tipoDocumento,
+                            text: tipoDocumento
+                        }));
+                    });
+                },
+                error: function() {
+                    // Em caso de erro, você pode lidar com isso aqui
+                    console.error('Erro ao carregar as empresas, regiões, unidades, cargos, situações e tipos de documento.');
                 }
             });
+        }
+    
+        // Chamar a função carregarOpcoes assim que a página é carregada
+        carregarOpcoes();
+    
+        // Função para carregar informações relacionadas à empresa selecionada
+        $('#empresaDocumentos').on('change', function() {
+            carregarInformacoesEmpresa();
+        });
+    
+        // Função para carregar informações relacionadas à região selecionada
+        $('#regionalDocumentos').on('change', function() {
+            carregarInformacoesRegional();
+        });
+    
+        // Função para carregar informações relacionadas à unidade selecionada
+        $('#unidadeDocumentos').on('change', function() {
+            carregarInformacoesUnidade();
+        });
+    
+        // Função para carregar informações relacionadas ao cargo selecionado
+        $('#cargoDocumentos').on('change', function() {
+            carregarInformacoesCargo();
+        });
+    
+        // Função para carregar informações relacionadas à situação selecionada
+        $('#situacaoDocumento').on('change', function() {
+            carregarInformacoesSituacao();
+        });
+    
+        // Função para carregar informações relacionadas ao tipo de documento selecionado
+        $('#tipoDocumento').on('change', function() {
+            carregarInformacoesTipoDocumento();
+        });
+    
+        // Função para carregar informações relacionadas à empresa selecionada
+        function carregarInformacoesEmpresa() {
+            var empresaSelecionada = $('#empresaDocumentos').val(); // Obter o valor da empresa selecionada
+            if (empresaSelecionada) {
+                $('#campoInformacaoEmpresa').val(empresaSelecionada); // Atualizar o valor do campo com a informação da empresa selecionada
+            } else {
+                $('#campoInformacaoEmpresa').attr('placeholder', 'Empresa'); // Definir o placeholder como 'Empresa' se nenhuma empresa for selecionada
+            }
+        }
+    
+        // Função para carregar informações relacionadas à região selecionada
+        function carregarInformacoesRegional() {
+            var regionalSelecionada = $('#regionalDocumentos').val(); // Obter o valor da região selecionada
+            if (regionalSelecionada) {
+                $('#campoInformacaoRegional').val(regionalSelecionada); // Atualizar o valor do campo com a informação da região selecionada
+            } else {
+                $('#campoInformacaoRegional').attr('placeholder', 'Regional'); // Definir o placeholder como 'Regional' se nenhuma região for selecionada
+            }
+        }
+    
+        // Função para carregar informações relacionadas à unidade selecionada
+        function carregarInformacoesUnidade() {
+            var unidadeSelecionada = $('#unidadeDocumentos').val(); // Obter o valor da unidade selecionada
+            if (unidadeSelecionada) {
+                $('#campoInformacaoUnidade').val(unidadeSelecionada); // Atualizar o valor do campo com a informação da unidade selecionada
+            } else {
+                $('#campoInformacaoUnidade').attr('placeholder', 'Unidade'); // Definir o placeholder como 'Unidade' se nenhuma unidade for selecionada
+            }
+        }
+    
+        // Função para carregar informações relacionadas ao cargo selecionado
+        function carregarInformacoesCargo() {
+            var cargoSelecionado = $('#cargoDocumentos').val(); // Obter o valor do cargo selecionado
+            if (cargoSelecionado) {
+                $('#campoInformacaoCargo').val(cargoSelecionado); // Atualizar o valor do campo com a informação do cargo selecionado
+            } else {
+                $('#campoInformacaoCargo').attr('placeholder', 'Cargo'); // Definir o placeholder como 'Cargo' se nenhum cargo for selecionado
+            }
+        }
+    
+        // Função para carregar informações relacionadas à situação selecionada
+        function carregarInformacoesSituacao() {
+            var situacaoSelecionada = $('#situacaoDocumento').val(); // Obter o valor da situação selecionada
+            if (situacaoSelecionada) {
+                $('#campoInformacaoSituacao').val(situacaoSelecionada); // Atualizar o valor do campo com a informação da situação selecionada
+            } else {
+                $('#campoInformacaoSituacao').attr('placeholder', 'Situação'); // Definir o placeholder como 'Situação' se nenhuma situação for selecionada
+            }
+        }
+    
+        // Função para carregar informações relacionadas ao tipo de documento selecionado
+        function carregarInformacoesTipoDocumento() {
+            var tipoDocumentoSelecionado = $('#tipoDocumento').val(); // Obter o valor do tipo de documento selecionado
+            if (tipoDocumentoSelecionado) {
+                $('#campoInformacaoTipoDocumento').val(tipoDocumentoSelecionado); // Atualizar o valor do campo com a informação do tipo de documento selecionado
+            } else {
+                $('#campoInformacaoTipoDocumento').attr('placeholder', 'Tipo de Documento'); // Definir o placeholder como 'Tipo de Documento' se nenhum tipo de documento for selecionado
+            }
+        }
+    });
+    </script>
+    
 
-
-            </script>
-
-
-
-
-            <div id="PendenciasASOForm" class="form-container">
-                <div class="subheader2">
-                    <p>Pendências ASO</p>
-                </div>
-                <form>
-                    <div class="form-row">
-                        <select id="empresaASO" name="empresaASO"  required>
-                            <option value="" disabled selected></option>
-                        </select>
-                        <label for="empresaASO">Empresa</label>
-                    </div>
-                    <div class="form-row">
-                        <select id="RegionalASO" name="RegionalASO"  required>
-                            <option value="" disabled selected></option>
-                        </select>
-                        <label for="RegionalASO">Regional</label>
-                    </div>
-                    <div class="form-row">
-                        <select id="UnidadeASO" name="UnidadeASO"  required>
-                            <option value="" disabled selected></option>
-                        </select>
-                        <label for="UnidadeASO">Unidade</label>
-                    </div>
-                    <div class="form-row">
-                        <input type="text" id="nomeASO" name="nomeASO" required>
-                        <label for="nomeASO">Nome do Colaborador</label>
-                    </div>
-                    <div class="form-row">
-                        <input type="text" id="matriculaASO" name="matriculaASO" required>
-                        <label for="matriculaASO">Matrícula</label>
-                    </div>
-                    <div class="form-row">
-                        <input type="text" id="cpfASO" name="cpfASO" required>
-                        <label for="cpfASO">CPF</label>
-                    </div>
-                    <div class="form-row">
-                        <select id="CargoASO" name="CargoASO"  required>
-                            <option value="" disabled selected></option>
-                        </select>
-                        <label for="CargoASO">Cargo</label>
-                    </div>
-                    <div class="form-row">
-                        <div class="date-row">
-                            <input type="text" id="admissaoASO" placeholder="Admissão" onfocus="(this.type='date')" onblur="(this.type='text')" pattern="\d{2}/\d{2}/\d{4}" title="Digite a data no formato dd/mm/aaaa">
-                        </div>
-                        <div class="date-row">
-                            <input type="text" id="desligamentoASO" placeholder="Desligamento" onfocus="(this.type='date')" onblur="(this.type='text')" pattern="\d{2}/\d{2}/\d{4}" title="Digite a data no formato dd/mm/aaaa">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <select id="situacaoASO" name="situacaoASO"  required>
-                            <option value="" disabled selected></option>
-                        </select>
-                        <label for="situacaoASO">Situação</label>
-                    </div>
-                    <div class="form-row">
-                        <select id="TipoDeDocumentoASO" name="TipoDeDocumentoASO"  required>
-                            <option value="" disabled selected></option>
-                        </select>
-                        <label for="TipoDeDocumentoASO">Tipo de Documento</label>
-                    </div>
-                    <div class="form-row button-row">
-                        <button id="pesquisarASO" type="button">Pesquisar</button>
-                    </div>
-                </form>
+    <div id="PendenciasASOForm" class="form-container">
+        <div class="subheader2">
+            <p>Pendências ASO</p>
+        </div>
+        <form>
+            <div class="form-row">
+                <select id="empresaASO" name="empresaASO"  required>
+                    <option value="" disabled selected></option>
+                </select>
+                <label for="empresaASO">Empresa</label>
             </div>
+            <div class="form-row">
+                <select id="RegionalASO" name="RegionalASO"  required>
+                    <option value="" disabled selected></option>
+                </select>
+                <label for="RegionalASO">Regional</label>
+            </div>
+            <div class="form-row">
+                <select id="UnidadeASO" name="UnidadeASO"  required>
+                    <option value="" disabled selected></option>
+                </select>
+                <label for="UnidadeASO">Unidade</label>
+            </div>
+            <div class="form-row">
+                <input type="text" id="nomeASO" name="nomeASO" required>
+                <label for="nomeASO">Nome do Colaborador</label>
+            </div>
+            <div class="form-row">
+                <input type="text" id="matriculaASO" name="matriculaASO" required>
+                <label for="matriculaASO">Matrícula</label>
+            </div>
+            <div class="form-row">
+                <input type="text" id="cpfASO" name="cpfASO" required>
+                <label for="cpfASO">CPF</label>
+            </div>
+            <div class="form-row">
+                <select id="CargoASO" name="CargoASO"  required>
+                    <option value="" disabled selected></option>
+                </select>
+                <label for="CargoASO">Cargo</label>
+            </div>
+            <div class="form-row">
+                <div class="date-row">
+                    <input type="text" id="admissaoASO" placeholder="Admissão" onfocus="(this.type='date')" onblur="(this.type='text')" pattern="\d{2}/\d{2}/\d{4}" title="Digite a data no formato dd/mm/aaaa">
+                </div>
+                <div class="date-row">
+                    <input type="text" id="desligamentoASO" placeholder="Desligamento" onfocus="(this.type='date')" onblur="(this.type='text')" pattern="\d{2}/\d{2}/\d{4}" title="Digite a data no formato dd/mm/aaaa">
+                </div>
+            </div>
+            <div class="form-row">
+                <select id="situacaoASO" name="situacaoASO"  required>
+                    <option value="" disabled selected></option>
+                </select>
+                <label for="situacaoASO">Situação</label>
+            </div>
+            <div class="form-row">
+                <select id="TipoDeDocumentoASO" name="TipoDeDocumentoASO"  required>
+                    <option value="" disabled selected></option>
+                </select>
+                <label for="TipoDeDocumentoASO">Tipo de Documento</label>
+            </div>
+            <div class="form-row button-row">
+                <button id="pesquisarASO" type="button">Pesquisar</button>
+            </div>
+        </form>
+    </div>
 
-            <script>
-                document.getElementById('admissaoASO').addEventListener('blur', function() {
-                    if (this.value !== '') {
-                        var parts = this.value.split('-');
-                        var formattedDate = parts[2] + '/' + parts[1] + '/' + parts[0];
-                        this.value = formattedDate;
-                    }
+    <script>
+        document.getElementById('admissaoASO').addEventListener('blur', function() {
+            if (this.value !== '') {
+                var parts = this.value.split('-');
+                var formattedDate = parts[2] + '/' + parts[1] + '/' + parts[0];
+                this.value = formattedDate;
+            }
+        });
+        document.getElementById('desligamentoASO').addEventListener('blur', function() {
+            if (this.value !== '') {
+                var parts = this.value.split('-');
+                var formattedDate = parts[2] + '/' + parts[1] + '/' + parts[0];
+                this.value = formattedDate;
+            }
+        });
+        </script>
+
+
+<script>
+    var urlCarregarRelatorio = "{% url 'relatorio_aso_simples' %}";
+
+    // Função genérica para carregar opções de um select
+    function carregarOpcoes(select, opcoesUnicas, propriedade, placeholder) {
+        select.innerHTML = '<option value="" disabled selected>' + placeholder + '</option>';
+        opcoesUnicas.forEach(function(opcao) {
+            var option = document.createElement("option");
+            option.text = opcao;
+            option.value = opcao;
+            select.add(option);
+        });
+    }
+
+    // Função para carregar dados da URL e preencher todos os selects
+    function carregarDadosEPreencherSelects() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", urlCarregarRelatorio, true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                var documentos = JSON.parse(xhr.responseText);
+
+                var opcoesEmpresas = new Set();
+                var opcoesRegionais = new Set();
+                var opcoesUnidades = new Set();
+                var opcoesCargos = new Set();
+                var opcoesSituacoes = new Set();
+                var opcoesTiposDocumentos = new Set();
+
+                documentos.forEach(function(documento) {
+                    opcoesEmpresas.add(documento.empresa);
+                    opcoesRegionais.add(documento.regional);
+                    opcoesUnidades.add(documento.unidade);
+                    opcoesCargos.add(documento.cargo);
+                    opcoesSituacoes.add(documento.situacao);
+                    opcoesTiposDocumentos.add(documento.tipo_documento);
                 });
-                document.getElementById('desligamentoASO').addEventListener('blur', function() {
-                    if (this.value !== '') {
-                        var parts = this.value.split('-');
-                        var formattedDate = parts[2] + '/' + parts[1] + '/' + parts[0];
-                        this.value = formattedDate;
-                    }
-                });
-                </script>
+
+                carregarOpcoes(document.getElementById("empresaASO"), opcoesEmpresas, "empresa", "");
+                carregarOpcoes(document.getElementById("RegionalASO"), opcoesRegionais, "regional", "");
+                carregarOpcoes(document.getElementById("UnidadeASO"), opcoesUnidades, "unidade", "");
+                carregarOpcoes(document.getElementById("CargoASO"), opcoesCargos, "cargo", "");
+                carregarOpcoes(document.getElementById("situacaoASO"), opcoesSituacoes, "situacao", "");
+                carregarOpcoes(document.getElementById("TipoDeDocumentoASO"), opcoesTiposDocumentos, "tipo_documento", "");
+            }
+        };
+        xhr.send();
+    }
+
+    // Adicionando evento de change para armazenar a seleção
+    var empresaSelecionadaPrimeiro = '';
+
+    document.getElementById("empresaASO").addEventListener("change", function() {
+        empresaSelecionadaPrimeiro = this.value;
+    });
+
+    // Chamada da função carregarDadosEPreencherSelects() quando a janela terminar de carregar
+    window.onload = function() {
+        carregarDadosEPreencherSelects();
+    };
+</script>
 
 
-            <script>
-                var urlCarregarRelatorio = "{% url 'carregar_relatorio_pendente_asos' %}";
+<script>
+    function openSidebarASO(page = 1) {
+        // Obter o valor selecionado nos selects de empresa, regional, unidade, cargo, situação e tipo de documento
+        const selectedEmpresa = document.getElementById('empresaASO').value;
+        const selectedRegional = document.getElementById('RegionalASO').value;
+        const selectedUnidade = document.getElementById('UnidadeASO').value;
+        const selectedCargo = document.getElementById('CargoASO').value;
+        const selectedSituacao = document.getElementById('situacaoASO').value;
+        const selectedTipoDeDocumento = document.getElementById('TipoDeDocumentoASO').value;
 
-                // Função genérica para carregar opções de um select
-                function carregarOpcoes(selectId, propriedade, selecionada, placeholder) {
-                    var select = document.getElementById(selectId);
-                    if (selecionada !== '') {
-                        return;
-                    }
-                    var xhr = new XMLHttpRequest();
-                    xhr.open("GET", urlCarregarRelatorio, true);
-                    xhr.onreadystatechange = function () {
-                        if (xhr.readyState == 4 && xhr.status == 200) {
-                            var documentos = JSON.parse(xhr.responseText);
-                            var opcoesUnicas = new Set();
-                            select.innerHTML = '<option value="" disabled selected>' + placeholder + '</option>';
-                            documentos.forEach(function(documento) {
-                                opcoesUnicas.add(documento[propriedade]);
-                            });
-                            opcoesUnicas.forEach(function(opcao) {
-                                var option = document.createElement("option");
-                                option.text = opcao;
-                                option.value = opcao;
-                                select.add(option);
-                            });
-                            if (selecionada !== '') {
-                                select.value = selecionada;
-                            }
-                        }
-                    };
-                    xhr.send();
-                }
+        // Obter os valores dos inputs de texto para nome, matrícula, CPF, admissão e desligamento
+        const nomeASO = document.getElementById('nomeASO').value.toLowerCase();
+        const matriculaASO = document.getElementById('matriculaASO').value.toLowerCase();
+        const cpfASO = document.getElementById('cpfASO').value.toLowerCase();
+        const admissaoASO = document.getElementById('admissaoASO').value;
+        const desligamentoASO = document.getElementById('desligamentoASO').value;
 
-                // Primeiro conjunto de scripts
-                var empresaSelecionadaPrimeiro = '';
+        // Construir a URL com parâmetros de filtro
+        let baseUrl = "{% url 'carregar_relatorio_pendente_asos' %}";
+        console.log('Base URL:', baseUrl); // Verificar a URL gerada pelo Django
 
-                function carregarEmpresasPrimeiro() {
-                    carregarOpcoes("empresaASO", "empresa", empresaSelecionadaPrimeiro, "");
-                }
+        // Garantir que a base URL é válida
+        if (!baseUrl.startsWith('http')) {
+            baseUrl = window.location.origin + baseUrl;
+        }
 
-                document.getElementById("empresaASO").addEventListener("change", function() {
-                    empresaSelecionadaPrimeiro = this.value;
-                });
+        const url = new URL(baseUrl);
+        url.searchParams.append('page', page);
+        if (selectedEmpresa) url.searchParams.append('empresa', selectedEmpresa);
+        if (selectedRegional) url.searchParams.append('regional', selectedRegional);
+        if (selectedUnidade) url.searchParams.append('unidade', selectedUnidade);
+        if (selectedCargo) url.searchParams.append('cargo', selectedCargo);
+        if (selectedSituacao) url.searchParams.append('status', selectedSituacao);
+        if (selectedTipoDeDocumento) url.searchParams.append('tipo_documento', selectedTipoDeDocumento);
+        if (nomeASO) url.searchParams.append('nome', nomeASO);
+        if (matriculaASO) url.searchParams.append('matricula', matriculaASO);
+        if (cpfASO) url.searchParams.append('cpf', cpfASO);
+        if (admissaoASO) url.searchParams.append('admissao', admissaoASO);
+        if (desligamentoASO) url.searchParams.append('desligamento', desligamentoASO);
 
-                // Chamada da função carregarEmpresasPrimeiro() quando a janela terminar de carregar
-                window.onload = function() {
-                    carregarEmpresasPrimeiro();
-                    carregarOpcoes("RegionalASO", "regional", "", ""); // Chamando a função para carregar as opções do RegionalASO também
-                    carregarOpcoes("UnidadeASO", "unidade", "", ""); // Chamando a função para carregar as opções do UnidadeASO também
-                    carregarOpcoes("CargoASO", "cargo", "", ""); // Chamando a função para carregar as opções do CargoASO também
-                    carregarOpcoes("situacaoASO", "status", "", ""); // Chamando a função para carregar as opções do SituaçãoASO também
-                    carregarOpcoes("TipoDeDocumentoASO", "tipo_documento", "", ""); // Chamando a função para carregar as opções do TipoDeDocumentoASO também
-                };
-            </script>
+        console.log('Full URL:', url.toString()); // Verificar a URL completa
 
-            <script>
-              function openSidebarASO() {
-    // Obter o valor selecionado nos selects de empresa, regional, unidade, cargo, situação e tipo de documento
-    const selectedEmpresa = document.getElementById('empresaASO').value;
-    const selectedRegional = document.getElementById('RegionalASO').value;
-    const selectedUnidade = document.getElementById('UnidadeASO').value;
-    const selectedCargo = document.getElementById('CargoASO').value;
-    const selectedSituacao = document.getElementById('situacaoASO').value;
-    const selectedTipoDeDocumento = document.getElementById('TipoDeDocumentoASO').value;
+        // Realizar uma solicitação AJAX para a view
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url.toString(), true);
+        xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const response = JSON.parse(xhr.responseText);
+                const data = response.pendentes;
+                const tbody = document.querySelector('#tabela-relatorio tbody');
+                tbody.innerHTML = ''; // Limpar o conteúdo atual da tabela
 
-    // Obter os valores dos inputs de texto para nome, matrícula, CPF, admissão e desligamento
-    const nomeASO = document.getElementById('nomeASO').value.toLowerCase();
-    const matriculaASO = document.getElementById('matriculaASO').value.toLowerCase();
-    const cpfASO = document.getElementById('cpfASO').value.toLowerCase();
-    const admissaoASO = document.getElementById('admissaoASO').value;
-    const desligamentoASO = document.getElementById('desligamentoASO').value;
-
-    // Realizar uma solicitação AJAX para a view
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', "{% url 'carregar_relatorio_pendente_asos' %}", true);
-    xhr.onload = function () {
-        if (xhr.status >= 200 && xhr.status < 300) {
-            const data = JSON.parse(xhr.responseText);
-            const tbody = document.querySelector('#tabela-relatorio tbody');
-            tbody.innerHTML = ''; // Limpar o conteúdo atual da tabela
-
-            // Iterar sobre os dados e preencher a tabela
-            data.forEach(function (item) {
-                // Verificar se a linha corresponde a todos os filtros selecionados
-                if ((selectedEmpresa === '' || item.empresa === selectedEmpresa) &&
-                    (selectedRegional === '' || item.regional === selectedRegional) &&
-                    (selectedUnidade === '' || item.unidade === selectedUnidade) &&
-                    (selectedCargo === '' || item.cargo === selectedCargo) &&
-                    (selectedSituacao === '' || item.status === selectedSituacao) &&
-                    (selectedTipoDeDocumento === '' || item.tipo_documento === selectedTipoDeDocumento) &&
-                    (nomeASO === '' || item.nome.toLowerCase().includes(nomeASO)) &&
-                    (matriculaASO === '' || item.matricula.toLowerCase().includes(matriculaASO)) &&
-                    (cpfASO === '' || item.cpf.toLowerCase().includes(cpfASO)) &&
-                    (admissaoASO === '' || item.admissao === admissaoASO) &&
-                    (desligamentoASO === '' || item.desligamento === desligamentoASO)) {
+                // Iterar sobre os dados e preencher a tabela
+                data.forEach(function (item) {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${item.empresa}</td>
@@ -1186,42 +1294,444 @@
                         <td>${item.desligamento}</td>
                         <td>${item.status}</td>
                         <td>${item.tipo_documento}</td>
-                        <td><button onclick="visualizarDocumento('${item.id}')">Visualizar</button></td>
                     `;
                     tbody.appendChild(row);
+                });
+
+                // Adicionar botões de paginação
+                const paginationContainer = document.getElementById('pagination');
+                paginationContainer.innerHTML = ''; // Limpar a paginação atual
+
+                if (response.has_previous) {
+                    const prevButton = document.createElement('button');
+                    prevButton.textContent = 'Anterior';
+                    prevButton.onclick = function() {
+                        openSidebarASO(response.page_number - 1);
+                    };
+                    paginationContainer.appendChild(prevButton);
                 }
-            });
 
-            // Abrir o sidebar após preencher a tabela
-            const sidebar = document.querySelector('.sidebar');
-            sidebar.classList.add('active');
-        } else {
-            console.error('Erro ao carregar os dados da view');
-        }
-    };
-    xhr.send();
-}
+                if (response.has_next) {
+                    const nextButton = document.createElement('button');
+                    nextButton.textContent = 'Próximo';
+                    nextButton.onclick = function() {
+                        openSidebarASO(response.page_number + 1);
+                    };
+                    paginationContainer.appendChild(nextButton);
+                }
 
-// Adicionando evento de clique ao botão de pesquisarASO
-const pesquisarBtnASO = document.getElementById('pesquisarASO');
-pesquisarBtnASO.addEventListener('click', openSidebarASO);
+                // Abrir o sidebar após preencher a tabela
+                const sidebar = document.querySelector('.sidebar');
+                sidebar.classList.add('active');
+            } else {
+                console.error('Erro ao carregar os dados da view');
+            }
+        };
+        xhr.send();
+    }
 
-// Função para fechar o sidebar do ASO
-function closeSidebarASO() {
-    const sidebar = document.querySelector('.sidebar');
-    sidebar.classList.remove('active');
-}
+    // Adicionando evento de clique ao botão de pesquisarASO
+    const pesquisarBtnASO = document.getElementById('pesquisarASO');
+    pesquisarBtnASO.addEventListener('click', () => openSidebarASO(1));
 
-// Adicionando evento de clique ao botão de fechar do ASO
-const closeBtnASO = document.querySelector('.close-btn-aso');
-closeBtnASO.addEventListener('click', closeSidebarASO);
+    // Função para fechar o sidebar do ASO
+    function closeSidebarASO() {
+        const sidebar = document.querySelector('.sidebar');
+        sidebar.classList.remove('active');
+    }
 
-// Função para visualizar o documento (substitua por sua lógica real)
+    // Adicionando evento de clique ao botão de fechar do ASO
+    const closeBtnASO = document.querySelector('.close-btn-aso');
+    closeBtnASO.addEventListener('click', closeSidebarASO);
+
+    // Função para visualizar o documento (substitua por sua lógica real)
+    function visualizarDocumento(id) {
+        console.log('Visualizando documento com o ID:', id);
+    }
+</script>
+
+
+
+<div id="PontoInexistentesForm" class="form-container">
+    <div class="subheader2">
+        <p>CARTÕES DE PONTO INEXISTENTES</p>
+    </div>
+    <form>
+        <div class="form-row">
+            <select id="empresaCartoes" name="empresaCartoes"  required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="empresaCartoes">Empresa</label>
+        </div>
+        <div class="form-row">
+            <select id="RegionalCartoes" name="RegionalCartoes"  required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="RegionalCartoes">Regional</label>
+        </div>
+        <div class="form-row">
+            <select id="UnidadeCartoes" name="UnidadeCartoes"  required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="UnidadeCartoes">Unidade</label>
+        </div>
+        <div class="form-row">
+            <input type="text" id="nomeCartoes" name="nomeCartoes" required>
+            <label for="nomeCartoes">Nome do Colaborador</label>
+        </div>
+
+        <div class="form-row">
+            <select id="situacaoCartoes" name="situacaoCartoes"  required>
+                <option value="" disabled selected>  </option>
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+                <option value="afastado">Afastado</option>
+            </select>
+            <label for="situacaoCartoes">Situação</label>
+        </div>
+        <div class="form-row">
+            <div class="date-row">
+                <select id="mesCartoes" name="mesCartoes">
+                    <option value="01">JAN</option>
+                    <option value="02">FEV</option>
+                    <option value="03">MAR</option>
+                    <option value="04">ABR</option>
+                    <option value="05">MAI</option>
+                    <option value="06">JUN</option>
+                    <option value="07">JUL</option>
+                    <option value="08">AGO</option>
+                    <option value="09">SET</option>
+                    <option value="10">OUT</option>
+                    <option value="11">NOV</option>
+                    <option value="12">DEZ</option>
+                </select>
+            </div>
+
+            <div class="date-row">
+                <input type="number" id="anoCartoes" name="anoCartoes" placeholder="Ano" min="1900" max="2100" step="1">
+            </div>
+        </div>
+
+        <div class="form-row button-row">
+            <button id="pesquisarCartoes" type="button">Pesquisar</button>
+        </div>
+    </form>
+</div>
+
+
+<div class="sidebar2">
+    <button class="close-btn2">Fechar</button>
+    <div class="table-container">
+        <div class="subheader3">
+            <p>RELATÓRIOS</p>
+        </div>
+        <div class="export-buttons">
+          <select id="exportFormat">
+              <option value="xlsx">Exportar para XLSX</option>
+              <option value="csv">Exportar para CSV</option>
+              <option value="pdf">Exportar para PDF</option>
+          </select>
+          <button onclick="authenticateDownload()"><i class="bi bi-download"></i></button>
+        </div>
+
+        <div class="search-container">
+          <input type="text" id="searchInput" placeholder="Pesquisar...">
+        </div>
+            <div class="rows-per-page">
+                <label for="rowsPerPage">Linhas por página:</label>
+                <select id="rowsPerPage" onchange="changeRowsPerPage()">
+                  <option value="8">8</option>
+                  <option value="10" selected>10</option>
+                  <option value="15">15</option>
+                  <option value="20">20</option>
+                  <option value="40">40</option>
+                  <option value="100">100</option>
+              </select>
+            </div>
+        <table id="tabela-relatorio2">
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th>Regional</th>
+                    <th>Unidade</th>
+                    <th>Nome do Colaborador</th>
+                    <th>Matrícula</th>
+                    <th>CPF</th>
+                    <th>Admissão</th>
+                    <th>Desligamento</th>
+                    <th>Situação</th>
+                    <th>JAN</th>
+                    <th>FEV</th>
+                    <th>MAR</th>
+                    <th>ABR</th>
+                    <th>MAI</th>
+                    <th>JUN</th>
+                    <th>JUL</th>
+                    <th>AGO</th>
+                    <th>SET</th>
+                    <th>OUT</th>
+                    <th>NOV</th>
+                    <th>DEZ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Os dados da tabela serão preenchidos dinamicamente aqui -->
+            </tbody>
+        </table>
+        <div class="pagination" id="pagination">
+            <button id="previous-page">&lt; < </button>
+            <span id="page-info"></span>
+            <button id="next-page"> > &gt;</button>
+        </div>
+    </div>
+
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        carregarDadosCartoes();
+    });
+
+    function carregarDadosCartoes() {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', "{% url 'relatorio_cartao_simples' %}", true);
+        xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const data = JSON.parse(xhr.responseText);
+                const selectEmpresa = document.getElementById('empresaCartoes');
+                const selectRegional = document.getElementById('RegionalCartoes');
+                const selectUnidade = document.getElementById('UnidadeCartoes');
+
+                // Limpar selects
+                selectEmpresa.innerHTML = '';
+                selectRegional.innerHTML = '';
+                selectUnidade.innerHTML = '';
+
+                // Adicionar opção padrão "Selecione uma opção"
+                const defaultOptionEmpresa = document.createElement('option');
+                defaultOptionEmpresa.value = '';
+                defaultOptionEmpresa.textContent = '';
+                defaultOptionEmpresa.disabled = true;
+                defaultOptionEmpresa.selected = true;
+                selectEmpresa.appendChild(defaultOptionEmpresa);
+
+                const defaultOptionRegional = document.createElement('option');
+                defaultOptionRegional.value = '';
+                defaultOptionRegional.textContent = '';
+                defaultOptionRegional.disabled = true;
+                defaultOptionRegional.selected = true;
+                selectRegional.appendChild(defaultOptionRegional);
+
+                const defaultOptionUnidade = document.createElement('option');
+                defaultOptionUnidade.value = '';
+                defaultOptionUnidade.textContent = '';
+                defaultOptionUnidade.disabled = true;
+                defaultOptionUnidade.selected = true;
+                selectUnidade.appendChild(defaultOptionUnidade);
+
+                const empresas = {};
+                const regionais = {};
+                const unidades = {};
+
+                data.forEach(function (item) {
+                    // Popula o select de empresas
+                    if (!empresas[item.empresa]) {
+                        const option = document.createElement('option');
+                        option.value = item.id;
+                        option.textContent = item.empresa;
+                        selectEmpresa.appendChild(option);
+                        empresas[item.empresa] = true;
+                    }
+                    // Popula o select de regionais
+                    if (!regionais[item.regional]) {
+                        const option = document.createElement('option');
+                        option.value = item.id;
+                        option.textContent = item.regional;
+                        selectRegional.appendChild(option);
+                        regionais[item.regional] = true;
+                    }
+                    // Popula o select de unidades
+                    if (!unidades[item.unidade]) {
+                        const option = document.createElement('option');
+                        option.value = item.id;
+                        option.textContent = item.unidade;
+                        selectUnidade.appendChild(option);
+                        unidades[item.unidade] = true;
+                    }
+                });
+            } else {
+                console.error('Erro ao carregar os dados dos cartões');
+            }
+        };
+        xhr.send();
+    }
+</script>
+
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+    function openSidebarCartoes(page = 1) {
+        // Realizar uma solicitação AJAX para a view
+        const xhr = new XMLHttpRequest();
+        const url = new URL("{% url 'listar_cartoes_ponto_inexistentes' %}", window.location.origin);
+        url.searchParams.append('page', page);
+
+        xhr.open('GET', url.toString(), true);
+        xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const response = JSON.parse(xhr.responseText);
+                const data = response.cartoes;
+                console.log("Dados recebidos:", data); // Adicione esta linha para verificar os dados recebidos
+
+                // Obtendo os textos selecionados nos campos de seleção
+                const empresaSelecionada = document.getElementById('empresaCartoes').options[document.getElementById('empresaCartoes').selectedIndex].text;
+                const regionalSelecionada = document.getElementById('RegionalCartoes').options[document.getElementById('RegionalCartoes').selectedIndex].text;
+                const unidadeSelecionada = document.getElementById('UnidadeCartoes').options[document.getElementById('UnidadeCartoes').selectedIndex].text;
+                const nomeColaborador = document.getElementById('nomeCartoes').value.trim();
+                const anoSelecionado = document.getElementById('anoCartoes').value;
+
+                console.log("Opção selecionada para Empresa:", empresaSelecionada);
+                console.log("Opção selecionada para Regional:", regionalSelecionada);
+                console.log("Opção selecionada para Unidade:", unidadeSelecionada);
+                console.log("Nome do Colaborador:", nomeColaborador);
+                console.log("Ano selecionado:", anoSelecionado);
+
+                const tbody = document.querySelector('#tabela-relatorio2 tbody');
+                tbody.innerHTML = ''; // Limpar o conteúdo atual da tabela
+
+                // Filtrando os dados da tabela com base nos valores selecionados
+                const dadosFiltrados = data.filter(function (item) {
+                    // Verificando se o filtro está vazio ou se corresponde ao valor do item
+                    const filtroEmpresa = empresaSelecionada === 'Empresa' || item.empresa === empresaSelecionada;
+                    const filtroRegional = regionalSelecionada === 'Regional' || item.regional === regionalSelecionada;
+                    const filtroUnidade = unidadeSelecionada === 'Unidade' || item.unidade === unidadeSelecionada;
+                    const filtroNome = nomeColaborador === '' || item.colaborador.toLowerCase().includes(nomeColaborador.toLowerCase());
+                    const filtroAno = anoSelecionado === '' || parseInt(item.admissao.split('/')[2]) <= parseInt(anoSelecionado);
+                    return filtroEmpresa && filtroRegional && filtroUnidade && filtroNome && filtroAno;
+                });
+
+                console.log("Dados filtrados:", dadosFiltrados); // Adicione esta linha para verificar os dados filtrados
+
+                // Iterar sobre os dados filtrados e preencher a tabela
+                dadosFiltrados.forEach(function (item) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.empresa}</td>
+                        <td>${item.regional}</td>
+                        <td>${item.unidade}</td>
+                        <td>${item.colaborador}</td>
+                        <td>${item.matricula}</td>
+                        <td>${item.cpf}</td>
+                        <td>${item.admissao}</td>
+                        <td>${item.desligamento}</td>
+                        <td>${item.status}</td>
+                        <td data-mes="JAN"></td>
+                        <td data-mes="FEV"></td>
+                        <td data-mes="MAR"></td>
+                        <td data-mes="ABR"></td>
+                        <td data-mes="MAI"></td>
+                        <td data-mes="JUN"></td>
+                        <td data-mes="JUL"></td>
+                        <td data-mes="AGO"></td>
+                        <td data-mes="SET"></td>
+                        <td data-mes="OUT"></td>
+                        <td data-mes="NOV"></td>
+                        <td data-mes="DEZ"></td>
+                    `;
+
+                    tbody.appendChild(row);
+
+                    // Verificar se o cartão de ponto existe
+                    if (item.existente === 'Sim') {
+                        const dataCartao = new Date(item.data);
+                        const mes = dataCartao.getMonth(); // 0 para Janeiro, 1 para Fevereiro, etc.
+                        const mesAbreviado = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'][mes];
+                        row.querySelector(`td[data-mes="${mesAbreviado}"]`).textContent = ''; // Deixa o campo vazio
+                    } else {
+                        // Se o cartão de ponto não existe, coloque 'FALTA' nos meses correspondentes
+                        const mesesFaltantes = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+                        mesesFaltantes.forEach(mesFaltante => {
+                            row.querySelector(`td[data-mes="${mesFaltante}"]`).textContent = 'FALTA';
+                        });
+                    }
+                });
+
+                // Adicionar botões de paginação
+                const paginationContainer = document.getElementById('pagination');
+                paginationContainer.innerHTML = ''; // Limpar a paginação atual
+
+                if (response.has_previous) {
+                    const prevButton = document.createElement('button');
+                    prevButton.textContent = 'Anterior';
+                    prevButton.onclick = function() {
+                        openSidebarCartoes(response.page_number - 1);
+                    };
+                    paginationContainer.appendChild(prevButton);
+                }
+
+                if (response.has_next) {
+                    const nextButton = document.createElement('button');
+                    nextButton.textContent = 'Próximo';
+                    nextButton.onclick = function() {
+                        openSidebarCartoes(response.page_number + 1);
+                    };
+                    paginationContainer.appendChild(nextButton);
+                }
+
+                // Abrir o sidebar após preencher a tabela
+                const sidebar = document.querySelector('.sidebar2');
+                sidebar.classList.add('active');
+            } else {
+                console.error('Erro ao carregar os dados da view');
+            }
+        };
+
+        xhr.send();
+    }
+
+    // Adicionando evento de clique ao botão de pesquisarCartoes
+    const pesquisarBtnCartoes = document.getElementById('pesquisarCartoes');
+    pesquisarBtnCartoes.addEventListener('click', () => openSidebarCartoes(1));
+
+    // Adicionando evento de clique ao botão Fechar
+    const closeBtn2 = document.querySelector('.close-btn2');
+    closeBtn2.addEventListener('click', function () {
+        // Remover a classe 'active' do sidebar
+        const sidebar = document.querySelector('.sidebar2');
+        sidebar.classList.remove('active');
+    });
+
+   // Função para visualizar o documento (implemente conforme necessário)
 function visualizarDocumento(id) {
     console.log('Visualizando documento com o ID:', id);
 }
 
-            </script>
+// Adicionando evento de clique ao botão de próxima página
+const nextPageButton = document.getElementById('next-page');
+nextPageButton.addEventListener('click', function() {
+    const currentPage = parseInt(document.getElementById('page-info').textContent.split('/')[0]);
+    openSidebarCartoes(currentPage + 1);
+});
+
+// Adicionando evento de clique ao botão de página anterior
+const prevPageButton = document.getElementById('previous-page');
+prevPageButton.addEventListener('click', function() {
+    const currentPage = parseInt(document.getElementById('page-info').textContent.split('/')[0]);
+    openSidebarCartoes(currentPage - 1);
+});
+
+// Função para alterar o número de linhas por página
+function changeRowsPerPage() {
+    openSidebarCartoes(1); // Recarregar a primeira página ao alterar o número de linhas por página
+}
+
+});
+       
+
+</script>
 
 
 
@@ -1230,614 +1740,218 @@ function visualizarDocumento(id) {
 
 
 
-
-
-
-
-            <div id="PontoInexistentesForm" class="form-container">
-                <div class="subheader2">
-                    <p>CARTÕES DE PONTO INEXISTENTES</p>
-                </div>
-                <form>
-                    <div class="form-row">
-                        <select id="empresaCartoes" name="empresaCartoes" placeholder="Empresa" >
-                            <option value="empresaCartoes" disabled selected>Empresa</option>
-                        </select>
-                    </div>
-                    <div class="form-row">
-                        <select id="RegionalCartoes" name="RegionalCartoes" placeholder="Regional" >
-                            <option value="RegionalCartoes" disabled selected>Regional</option>
-                        </select>
-                    </div>
-                    <div class="form-row">
-                        <select id="UnidadeCartoes" name="UnidadeCartoes" placeholder="Unidade" >
-                            <option value="UnidadeCartoes" disabled selected>Unidade</option>
-                        </select>
-                    </div>
-                    <div class="form-row">
-                        <input type="text" id="nomeCartoes" name="nomeCartoes" placeholder="Nome do Colaborador">
-                    </div>
-
-                    <div class="form-row">
-                        <select id="situacaoCartoes" name="situacaoCartoes" placeholder="Situação">
-                            <option value="" disabled selected> Situação </option>
-                            <option value="ativo">Ativo</option>
-                            <option value="inativo">Inativo</option>
-                            <option value="afastado">Afastado</option>
-                        </select>
-                    </div>
-                    <div class="form-row">
-                        <div class="date-row">
-                            <select id="mesCartoes" name="mesCartoes">
-                                <option value="01">JAN</option>
-                                <option value="02">FEV</option>
-                                <option value="03">MAR</option>
-                                <option value="04">ABR</option>
-                                <option value="05">MAI</option>
-                                <option value="06">JUN</option>
-                                <option value="07">JUL</option>
-                                <option value="08">AGO</option>
-                                <option value="09">SET</option>
-                                <option value="10">OUT</option>
-                                <option value="11">NOV</option>
-                                <option value="12">DEZ</option>
-                            </select>
-                        </div>
-
-                        <div class="date-row">
-                            <input type="number" id="anoCartoes" name="anoCartoes" placeholder="Ano" min="1900" max="2100" step="1">
-                        </div>
-                    </div>
-
-                    <div class="form-row button-row">
-                        <button id="pesquisarCartoes" type="button">Pesquisar</button>
-                    </div>
-                </form>
+<div id="DocumentosVencidosForm" class="form-container">
+    <div class="subheader2">
+        <p>DOCUMENTOS VENCIDOS</p>
+    </div>
+    <form>
+        <div class="form-row">
+            <select id="empresaVencidos" name="empresaVencidos" onclick="carregarEmpresas()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="empresaVencidos">Empresa</label>
+        </div>
+        <div class="form-row">
+            <select id="RegionalVencidos" name="RegionalVencidos" onclick="carregarRegionais()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="RegionalVencidos">Regional</label>
+        </div>
+        <div class="form-row">
+            <select id="UnidadeVencidos" name="UnidadeVencidos" onclick="carregarUnidades()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="UnidadeVencidos">Unidade</label>
+        </div>
+        <div class="form-row">
+            <input type="text" id="nomeVencidos" name="nomeVencidos" required>
+            <label for="nomeVencidos">Nome do Colaborador</label>
+        </div>
+        <div class="form-row">
+            <input type="text" id="matriculaVencidos" name="matriculaVencidos" required>
+            <label for="matriculaVencidos">Matrícula</label>
+        </div>
+        <div class="form-row">
+            <input type="text" id="cpfVencidos" name="cpfVencidos" required>
+            <label for="cpfVencidos">CPF</label>
+        </div>
+        <div class="form-row">
+            <select id="CargoVencidos" name="CargoVencidos" onclick="carregarCargo()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="CargoVencidos">Cargo</label>
+        </div>
+        <div class="form-row">
+            <div class="date-row">
+                <input type="text" id="admissaoVencidos" placeholder="admissao" onfocus="(this.type='date')" onblur="(this.type='text')" pattern="\d{2}/\d{2}/\d{4}" title="Digite a data no formato dd/mm/aaaa">
             </div>
-
-
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    carregarEmpresasCartoes();
-                    carregarRegionalCartoes();
-                    carregarUnidadeCartoes();
-                });
-
-                function carregarEmpresasCartoes() {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('GET', "{% url 'listar_cartoes_ponto_inexistentes' %}?tipo=empresa", true);
-                    xhr.onload = function () {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            const data = JSON.parse(xhr.responseText);
-                            const selectEmpresa = document.getElementById('empresaCartoes');
-                            selectEmpresa.innerHTML = '';
-                            const defaultOption = document.createElement('option');
-                            defaultOption.value = '';
-                            defaultOption.textContent = 'Empresa';
-                            defaultOption.disabled = true;
-                            defaultOption.selected = true;
-                            selectEmpresa.appendChild(defaultOption);
-                            const adicionadas = {};
-                            data.forEach(function (item) {
-                                if (!adicionadas[item.empresa]) {
-                                    const option = document.createElement('option');
-                                    option.value = item.id;
-                                    option.textContent = item.empresa;
-                                    selectEmpresa.appendChild(option);
-                                    adicionadas[item.empresa] = true;
-                                }
-                            });
-                        } else {
-                            console.error('Erro ao carregar as empresas');
-                        }
-                    };
-                    xhr.send();
-                }
-
-                function carregarRegionalCartoes() {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('GET', "{% url 'listar_cartoes_ponto_inexistentes' %}?tipo=regional", true);
-                    xhr.onload = function () {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            const data = JSON.parse(xhr.responseText);
-                            const selectRegional = document.getElementById('RegionalCartoes');
-                            selectRegional.innerHTML = '';
-                            const defaultOption = document.createElement('option');
-                            defaultOption.value = '';
-                            defaultOption.textContent = 'Regional';
-                            defaultOption.disabled = true;
-                            defaultOption.selected = true;
-                            selectRegional.appendChild(defaultOption);
-                            const adicionadas = {};
-                            data.forEach(function (item) {
-                                if (!adicionadas[item.regional]) {
-                                    const option = document.createElement('option');
-                                    option.value = item.id;
-                                    option.textContent = item.regional;
-                                    selectRegional.appendChild(option);
-                                    adicionadas[item.regional] = true;
-                                }
-                            });
-                        } else {
-                            console.error('Erro ao carregar as regionais');
-                        }
-                    };
-                    xhr.send();
-                }
-
-                function carregarUnidadeCartoes() {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('GET', "{% url 'listar_cartoes_ponto_inexistentes' %}?tipo=unidade", true);
-                    xhr.onload = function () {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            const data = JSON.parse(xhr.responseText);
-                            const selectUnidade = document.getElementById('UnidadeCartoes');
-                            selectUnidade.innerHTML = '';
-                            const defaultOption = document.createElement('option');
-                            defaultOption.value = '';
-                            defaultOption.textContent = 'Unidade';
-                            defaultOption.disabled = true;
-                            defaultOption.selected = true;
-                            selectUnidade.appendChild(defaultOption);
-                            const adicionadas = {};
-                            data.forEach(function (item) {
-                                if (!adicionadas[item.unidade]) {
-                                    const option = document.createElement('option');
-                                    option.value = item.id;
-                                    option.textContent = item.unidade;
-                                    selectUnidade.appendChild(option);
-                                    adicionadas[item.unidade] = true;
-                                }
-                            });
-                        } else {
-                            console.error('Erro ao carregar as unidades');
-                        }
-                    };
-                    xhr.send();
-                }
-            </script>
-
-
-            <div class="sidebar2">
-                <button class="close-btn2">Fechar</button>
-                <div class="table-container">
-                    <div class="subheader3">
-                        <p>RELATÓRIOS</p>
-                    </div>
-                    <div class="export-buttons">
-                      <select id="exportFormat">
-                          <option value="xlsx">Exportar para XLSX</option>
-                          <option value="csv">Exportar para CSV</option>
-                          <option value="pdf">Exportar para PDF</option>
-                      </select>
-                      <button onclick="authenticateDownload()"><i class="bi bi-download"></i></button>
-                    </div>
-
-                    <div class="search-container">
-                      <input type="text" id="searchInput" placeholder="Pesquisar...">
-                    </div>
-                        <div class="rows-per-page">
-                            <label for="rowsPerPage">Linhas por página:</label>
-                            <select id="rowsPerPage" onchange="changeRowsPerPage()">
-                              <option value="8">8</option>
-                              <option value="10" selected>10</option>
-                              <option value="15">15</option>
-                              <option value="20">20</option>
-                              <option value="40">40</option>
-                              <option value="100">100</option>
-                          </select>
-                        </div>
-                    <table id="tabela-relatorio2">
-                        <thead>
-                            <tr>
-                                <th>Empresa</th>
-                                <th>Regional</th>
-                                <th>Unidade</th>
-                                <th>Nome do Colaborador</th>
-                                <th>Matrícula</th>
-                                <th>CPF</th>
-                                <th>Admissão</th>
-                                <th>Desligamento</th>
-                                <th>Situação</th>
-                                <th>JAN</th>
-                                <th>FEV</th>
-                                <th>MAR</th>
-                                <th>ABR</th>
-                                <th>MAI</th>
-                                <th>JUN</th>
-                                <th>JUL</th>
-                                <th>AGO</th>
-                                <th>SET</th>
-                                <th>OUT</th>
-                                <th>NOV</th>
-                                <th>DEZ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Os dados da tabela serão preenchidos dinamicamente aqui -->
-                        </tbody>
-                    </table>
-                    <div class="pagination" id="pagination">
-                        <button id="previous-page">&lt; < </button>
-                        <span id="page-info"></span>
-                        <button id="next-page"> > &gt;</button>
-                    </div>
-                </div>
-
+            <div class="date-row">
+                <input type="text" id="desligamentoVencidos" placeholder="desligamento" onfocus="(this.type='date')" onblur="(this.type='text')" pattern="\d{2}/\d{2}/\d{4}" title="Digite a data no formato dd/mm/aaaa">
             </div>
+        </div>
+        <div class="form-row">
+            <div class="date-row">
+                <select id="mesCartoes" name="mesCartoes" placeholder="mês">
+                    <option value="" disabled selected>mês</option>
+                    <option value="01">JAN</option>
+                    <option value="02">FEV</option>
+                    <option value="03">MAR</option>
+                    <option value="04">ABR</option>
+                    <option value="05">MAI</option>
+                    <option value="06">JUN</option>
+                    <option value="07">JUL</option>
+                    <option value="08">AGO</option>
+                    <option value="09">SET</option>
+                    <option value="10">OUT</option>
+                    <option value="11">NOV</option>
+                    <option value="12">DEZ</option>
+                </select>
+            </div>
+            
+            <div class="date-row">
+                <input type="number" id="anoVencidos" name="anoVencidos" placeholder="ano" min="1900" max="2100" step="1">
+            </div>
+        </div>
+        <div class="form-row">
+            <select id="TipoDocumentoVencidos" name="TipoDocumentoVencidos" onclick="carregarTipoDeDocumento()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="TipoDocumentoVencidos">Tipo de Documento</label>
+        </div>                 
+        <div class="form-row button-row">
+            <button id="pesquisarVencidos" type="button">Pesquisar</button>
+        </div>
+    </form>
+</div>
 
-            <script>
-                function openSidebarCartoes() {
-                    // Realizar uma solicitação AJAX para a view
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('GET', "{% url 'listar_cartoes_ponto_inexistentes' %}", true);
-                    xhr.onload = function () {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            const data = JSON.parse(xhr.responseText);
-                            console.log("Dados recebidos:", data); // Adicione esta linha para verificar os dados recebidos
-
-                            // Obtendo os textos selecionados nos campos de seleção
-                            const empresaSelecionada = document.getElementById('empresaCartoes').options[document.getElementById('empresaCartoes').selectedIndex].text;
-                            const regionalSelecionada = document.getElementById('RegionalCartoes').options[document.getElementById('RegionalCartoes').selectedIndex].text;
-                            const unidadeSelecionada = document.getElementById('UnidadeCartoes').options[document.getElementById('UnidadeCartoes').selectedIndex].text;
-                            const nomeColaborador = document.getElementById('nomeCartoes').value.trim();
-                            const anoSelecionado = document.getElementById('anoCartoes').value;
-
-                            console.log("Opção selecionada para Empresa:", empresaSelecionada);
-                            console.log("Opção selecionada para Regional:", regionalSelecionada);
-                            console.log("Opção selecionada para Unidade:", unidadeSelecionada);
-                            console.log("Nome do Colaborador:", nomeColaborador);
-                            console.log("Ano selecionado:", anoSelecionado);
-
-                            const tbody = document.querySelector('#tabela-relatorio2 tbody');
-                            tbody.innerHTML = ''; // Limpar o conteúdo atual da tabela
-
-                            // Filtrando os dados da tabela com base nos valores selecionados
-                            const dadosFiltrados = data.filter(function (item) {
-                                // Verificando se o filtro está vazio ou se corresponde ao valor do item
-                                const filtroEmpresa = empresaSelecionada === 'Empresa' || item.empresa === empresaSelecionada;
-                                const filtroRegional = regionalSelecionada === 'Regional' || item.regional === regionalSelecionada;
-                                const filtroUnidade = unidadeSelecionada === 'Unidade' || item.unidade === unidadeSelecionada;
-                                const filtroNome = nomeColaborador === '' || item.colaborador.toLowerCase().includes(nomeColaborador.toLowerCase());
-                                const filtroAno = anoSelecionado === '' || parseInt(item.admissao.split('/')[2]) <= parseInt(anoSelecionado);
-                                return filtroEmpresa && filtroRegional && filtroUnidade && filtroNome && filtroAno;
-                            });
-
-                            console.log("Dados filtrados:", dadosFiltrados); // Adicione esta linha para verificar os dados filtrados
-
-                            // Iterar sobre os dados filtrados e preencher a tabela
-                            dadosFiltrados.forEach(function (item) {
-                                const row = document.createElement('tr');
-                                row.innerHTML = `
-                                    <td>${item.empresa}</td>
-                                    <td>${item.regional}</td>
-                                    <td>${item.unidade}</td>
-                                    <td>${item.colaborador}</td>
-                                    <td>${item.matricula}</td>
-                                    <td>${item.cpf}</td>
-                                    <td>${item.admissao}</td>
-                                    <td>${item.desligamento}</td>
-                                    <td>${item.status}</td>
-                                    <td data-mes="JAN"></td>
-                                    <td data-mes="FEV"></td>
-                                    <td data-mes="MAR"></td>
-                                    <td data-mes="ABR"></td>
-                                    <td data-mes="MAI"></td>
-                                    <td data-mes="JUN"></td>
-                                    <td data-mes="JUL"></td>
-                                    <td data-mes="AGO"></td>
-                                    <td data-mes="SET"></td>
-                                    <td data-mes="OUT"></td>
-                                    <td data-mes="NOV"></td>
-                                    <td data-mes="DEZ"></td>
-                                `;
-
-                                tbody.appendChild(row);
-
-                                // Verificar se o cartão de ponto existe
-                                if (item.existente === 'Sim') {
-                                    const dataCartao = new Date(item.data);
-                                    const mes = dataCartao.getMonth(); // 0 para Janeiro, 1 para Fevereiro, etc.
-                                    const mesAbreviado = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'][mes];
-                                    row.querySelector(`td[data-mes="${mesAbreviado}"]`).textContent = ''; // Deixa o campo vazio
-                                } else {
-                                    // Se o cartão de ponto não existe, coloque 'FALTA' nos meses correspondentes
-                                    const mesesFaltantes = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
-                                    mesesFaltantes.forEach(mesFaltante => {
-                                        row.querySelector(`td[data-mes="${mesFaltante}"]`).textContent = 'FALTA';
-                                    });
-                                }
-                            });
-
-                            // Abrir o sidebar após preencher a tabela
-                            const sidebar = document.querySelector('.sidebar2');
-                            sidebar.classList.add('active');
-                        } else {
-                            console.error('Erro ao carregar os dados da view');
-                        }
-                    };
-
-                    xhr.send();
-                }
-
-                // Adicionando evento de clique ao botão de pesquisarCartoes
-                const pesquisarBtnCartoes = document.getElementById('pesquisarCartoes');
-                pesquisarBtnCartoes.addEventListener('click', openSidebarCartoes);
-
-                // Adicionando evento de clique ao botão Fechar
-                const closeBtn2 = document.querySelector('.close-btn2');
-                closeBtn2.addEventListener('click', function () {
-                    // Remover a classe 'active' do sidebar
-                    const sidebar = document.querySelector('.sidebar2');
-                    sidebar.classList.remove('active');
-                });
-
-                // Função para visualizar o documento (implemente conforme necessário)
-                function visualizarDocumento(id) {
-                    console.log('Visualizando documento com o ID:', id);
-                }
-                </script>
-
-                <div id="DocumentosVencidosForm" class="form-container">
-                    <div class="subheader2">
-                        <p>DOCUMENTOS VENCIDOS</p>
-                    </div>
-                    <form>
-                        <div class="form-row">
-                            <select id="empresaVencidos" name="empresaVencidos" placeholder="Empresa" onclick="carregarEmpresas()">
-                                <option value="empresaVencidos" disabled selected>Empresa</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <select id="RegionalVencidos" name="RegionalVencidos" placeholder="Regional" onclick="carregarRegional()">
-                                <option value="RegionalVencidos" disabled selected>Regional</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <select id="UnidadeVencidos" name="UnidadeVencidos" placeholder="Unidade" onclick="carregarUnidade()">
-                                <option value="UnidadeVencidos" disabled selected>Unidade</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <input type="text" id="nomeVencidos" name="nomeVencidos" placeholder="Nome do Colaborador">
-                        </div>
-                        <div class="form-row">
-                            <input type="number" id="matriculaVencidos" name="matriculaVencidos" placeholder="Matrícula">
-                        </div>
-                        <div class="form-row">
-                            <input type="text" id="cpfVencidos" name="cpfVencidos" placeholder="CPF">
-                        </div>
-                        <div class="form-row">
-                            <select id="CargoVencidos" name="CargoVencidos" placeholder="Cargo" onclick="carregarCargo()">
-                                <option value="CargoVencidos" disabled selected>Cargo</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <div class="date-row">
-                                <input type="date" id="admissaoVencidos" name="admissaoVencidos" placeholder="Admissão">
-                            </div>
-                            <div class="date-row">
-                                <input type="date" id="desligamentoVencidos" name="desligamentoVencidos" placeholder="Desligamento">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="date-row">
-                                <input type="month" id="mesVencidos" name="mesVencidos" placeholder="mês">
-                            </div>
-                            <div class="date-row">
-                                <input type="number" id="anoVencidos" name="anoVencidos" placeholder="ano" min="1900" max="2100" step="1">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <select id="TipoDocumentoVencidos" name="TipoDocumentoVencidos" placeholder="Tipo de Documento" onclick="carregarTipoDeDocumento()">
-                                <option value="TipoDocumentoVencidos" disabled selected>Tipo de Documento</option>
-                            </select>
-                        </div>                   
-                        <div class="form-row button-row">
-                            <button id="pesquisarVencidos" type="button">Pesquisar</button>
-                        </div>
-                    </form>
-                </div>
-                
-
-                 <div class="sidebar3">
-                    <button class="close-btn3">Fechar</button>
-                    <div class="table-container">
-                        <div class="subheader3">
-                            <p>RELATÓRIOS</p>
-                        </div>
-                        <div class="export-buttons">
-                          <select id="exportFormat">
-                              <option value="xlsx">Exportar para XLSX</option>
-                              <option value="csv">Exportar para CSV</option>
-                              <option value="pdf">Exportar para PDF</option>
-                          </select>
-                          <button onclick="authenticateDownload()"><i class="bi bi-download"></i></button>
-                        </div>
-                        
-                        <div class="search-container">
-                          <input type="text" id="searchInput" placeholder="Pesquisar...">
-                        </div>
-                            <div class="rows-per-page">
-                                <label for="rowsPerPage">Linhas por página:</label>
-                                <select id="rowsPerPage" onchange="changeRowsPerPage()">
-                                  <option value="8">8</option>
-                                  <option value="10" selected>10</option>
-                                  <option value="15">15</option>
-                                  <option value="20">20</option>
-                                  <option value="40">40</option>
-                                  <option value="100">100</option>
-                              </select>
-                            </div>
-                        <table id="tabela-relatorio3">
-                            <thead>
-                                <tr>
-                                    <th>Empresa</th>
-                                    <th>Regional</th>
-                                    <th>Unidade</th>
-                                    <th>Nome do Colaborador</th>
-                                    <th>Matrícula</th>
-                                    <th>CPF</th>
-                                    <th>Admissão</th>
-                                    <th>Desligamento</th>
-                                    <th>Documento</th>
-                                    <th>Obrigatório</th>
-                                    <th>Data Competência</th> 
-                                    <th>Data de Vencimento</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Os dados da tabela serão preenchidos dinamicamente aqui -->
-                            </tbody>
-                        </table>
-                        <div class="pagination" id="pagination">
-                            <button id="previous-page">&lt; < </button>
-                            <span id="page-info"></span>
-                            <button id="next-page"> > &gt;</button>
-                        </div>
-                    </div>
-                    
-                </div>
-               
+<script>
+    document.getElementById('admissaoVencidos').addEventListener('blur', function() {
+        if (this.value !== '') {
+            var parts = this.value.split('-');
+            var formattedDate = parts[2] + '/' + parts[1] + '/' + parts[0];
+            this.value = formattedDate;
+        }
+    });
+    document.getElementById('desligamentoVencidos').addEventListener('blur', function() {
+        if (this.value !== '') {
+            var parts = this.value.split('-');
+            var formattedDate = parts[2] + '/' + parts[1] + '/' + parts[0];
+            this.value = formattedDate;
+        }
+    });
+    </script>
 
 
 
-                <script>
-                    $(document).ready(function(){
-                        var empresasSet = new Set(); // Cria um conjunto para armazenar as empresas sem repetição
-                    
-                        // Chamada AJAX assim que a página for carregada
-                        $.ajax({
-                            url: "{% url 'lista_vencidos' %}", // Substitua pela URL correta
-                            type: 'GET',
-                            success: function(data) {
-                                // Limpa as opções atuais do select
-                                $('#empresaVencidos').empty();
-                    
-                                // Adiciona uma opção padrão
-                                $('#empresaVencidos').append('<option value="" disabled selected>Selecione uma empresa</option>');
-                    
-                                // Adiciona as empresas ao conjunto (sem repetições)
-                                $.each(data, function(index, empresa){
-                                    empresasSet.add(empresa.empresa);
-                                });
-                    
-                                // Adiciona as opções de empresas ao select
-                                empresasSet.forEach(function(empresa) {
-                                    $('#empresaVencidos').append('<option value="' + empresa + '">' + empresa + '</option>');
-                                });
-                            },
-                            error: function(xhr, status, error) {
-                                console.error('Erro ao carregar empresas:', error);
-                            }
-                        });
-                    });
+ <div class="sidebar3">
+    <button class="close-btn3">X</button>
+    <div class="table-container">
+        <div class="subheader3">
+            <p>RELATÓRIOS</p>
+        </div>
+        <div class="export-buttons">
+          <select id="exportFormat">
+              <option value="xlsx">Exportar para XLSX</option>
+              <option value="csv">Exportar para CSV</option>
+              <option value="pdf">Exportar para PDF</option>
+          </select>
+          <button onclick="authenticateDownload()"><i class="bi bi-download"></i></button>
+        </div>
+        
+        <div class="search-container">
+          <input type="text" id="searchInput" placeholder="Pesquisar...">
+        </div>
+            <div class="rows-per-page">
+                <label for="rowsPerPage">Linhas por página:</label>
+                <select id="rowsPerPage" onchange="changeRowsPerPage()">
+                  <option value="8">8</option>
+                  <option value="10" selected>10</option>
+                  <option value="15">15</option>
+                  <option value="20">20</option>
+                  <option value="40">40</option>
+                  <option value="100">100</option>
+              </select>
+            </div>
+        <table id="tabela-relatorio3">
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th>Regional</th>
+                    <th>Unidade</th>
+                    <th>Nome do Colaborador</th>
+                    <th>Matrícula</th>
+                    <th>CPF</th>
+                    <th>Admissão</th>
+                    <th>Desligamento</th>
+                    <th>Cargo</th>
+                    <th>Documento</th>
+                    <th>Obrigatório</th>
+                    <th>Data Competência</th> 
+                    <th>Data de Vencimento</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Os dados da tabela serão preenchidos dinamicamente aqui -->
+            </tbody>
+        </table>
+        <div class="pagination" id="pagination">
+            <button id="previous-page">&lt; < </button>
+            <span id="page-info"></span>
+            <button id="next-page"> > &gt;</button>
+        </div>
+    </div>
+    
+</div>
 
-                    $(document).ready(function(){
-    var regionalSet = new Set(); // Cria um conjunto para armazenar as regionais sem repetição
+
+
+
+<script>
+    $(document).ready(function() {
+    var empresasSet = new Set();
+    var regionalSet = new Set();
+    var unidadeSet = new Set();
+    var cargoSet = new Set();
+    var tiposDocumento = [];
 
     // Chamada AJAX assim que a página for carregada
     $.ajax({
-        url: "{% url 'lista_vencidos' %}", // Substitua pela URL correta
+        url: "{% url 'relatorio_vencidos_simples' %}", // Substitua pela URL correta
         type: 'GET',
         success: function(data) {
-            // Limpa as opções atuais do select
-            $('#RegionalVencidos').empty();
+            // Limpa as opções atuais dos selects
+            $('#empresaVencidos').empty().append('<option value="" disabled selected></option>');
+            $('#RegionalVencidos').empty().append('<option value="" disabled selected></option>');
+            $('#UnidadeVencidos').empty().append('<option value="" disabled selected></option>');
+            $('#CargoVencidos').empty().append('<option value="" disabled selected></option>');
+            $('#TipoDocumentoVencidos').empty().append('<option value="" disabled selected></option>');
 
-            // Adiciona uma opção padrão
-            $('#RegionalVencidos').append('<option value="" disabled selected>Selecione uma regional</option>');
-
-            // Adiciona as regionais ao conjunto (sem repetições)
-            $.each(data, function(index, regional){
-                regionalSet.add(regional.regional);
+            // Adiciona os dados ao conjunto (sem repetições)
+            $.each(data, function(index, item) {
+                if (item.empresa) empresasSet.add(item.empresa);
+                if (item.regional) regionalSet.add(item.regional);
+                if (item.unidade) unidadeSet.add(item.unidade);
+                if (item.cargo) cargoSet.add(item.cargo);
+                if (item.tipo_documento && tiposDocumento.indexOf(item.tipo_documento) === -1) {
+                    tiposDocumento.push(item.tipo_documento);
+                }
             });
 
-            // Adiciona as opções de regionais ao select
+            // Adiciona as opções aos selects
+            empresasSet.forEach(function(empresa) {
+                $('#empresaVencidos').append('<option value="' + empresa + '">' + empresa + '</option>');
+            });
+
             regionalSet.forEach(function(regional) {
                 $('#RegionalVencidos').append('<option value="' + regional + '">' + regional + '</option>');
             });
-        },
-        error: function(xhr, status, error) {
-            console.error('Erro ao carregar regionais:', error);
-        }
-    });
-});
 
-$(document).ready(function(){
-    var unidadeSet = new Set(); // Cria um conjunto para armazenar as unidades sem repetição
-
-    // Chamada AJAX assim que a página for carregada
-    $.ajax({
-        url: "{% url 'lista_vencidos' %}", // Substitua pela URL correta
-        type: 'GET',
-        success: function(data) {
-            // Limpa as opções atuais do select
-            $('#UnidadeVencidos').empty();
-
-            // Adiciona uma opção padrão
-            $('#UnidadeVencidos').append('<option value="" disabled selected>Selecione uma unidade</option>');
-
-            // Adiciona as unidades ao conjunto (sem repetições)
-            $.each(data, function(index, unidade){
-                unidadeSet.add(unidade.unidade);
-            });
-
-            // Adiciona as opções de unidades ao select
             unidadeSet.forEach(function(unidade) {
                 $('#UnidadeVencidos').append('<option value="' + unidade + '">' + unidade + '</option>');
             });
-        },
-        error: function(xhr, status, error) {
-            console.error('Erro ao carregar unidades:', error);
-        }
-    });
-});
-$(document).ready(function(){
-    var cargoSet = new Set(); // Cria um conjunto para armazenar os cargos sem repetição
 
-    // Chamada AJAX assim que a página for carregada
-    $.ajax({
-        url: "{% url 'lista_vencidos' %}", // Substitua pela URL correta
-        type: 'GET',
-        success: function(data) {
-            // Limpa as opções atuais do select
-            $('#CargoVencidos').empty();
-
-            // Adiciona uma opção padrão
-            $('#CargoVencidos').append('<option value="" disabled selected>Selecione um cargo</option>');
-
-            // Adiciona os cargos ao conjunto (sem repetições)
-            $.each(data, function(index, cargo){
-                cargoSet.add(cargo.cargo);
-            });
-
-            // Adiciona as opções de cargos ao select
             cargoSet.forEach(function(cargo) {
                 $('#CargoVencidos').append('<option value="' + cargo + '">' + cargo + '</option>');
-            });
-        },
-        error: function(xhr, status, error) {
-            console.error('Erro ao carregar cargos:', error);
-        }
-    });
-});
-
-
-
-$(document).ready(function(){
-    $.ajax({
-        url: "{% url 'lista_vencidos' %}",  // Certifique-se de que esta URL é correta e completa
-        type: 'GET',
-        success: function(data) {  // Mudança aqui: de data1 para data
-            $('#TipoDocumentoVencidos').empty();
-            $('#TipoDocumentoVencidos').append('<option value="" disabled selected>Selecione um tipo de documento</option>');
-
-            var tiposDocumento = [];
-            $.each(data, function(index, documento){
-                var tipoDocumento = documento.tipo_documento;
-                if (tipoDocumento && tiposDocumento.indexOf(tipoDocumento) === -1) {
-                    tiposDocumento.push(tipoDocumento);
-                }
             });
 
             $.each(tiposDocumento, function(index, tipoDocumento) {
@@ -1847,274 +1961,831 @@ $(document).ready(function(){
             console.log(data);  // Mostra todos os dados no console do navegador
         },
         error: function(xhr, status, error) {
-            console.error('Erro ao carregar tipos de documento:', error);
+            console.error('Erro ao carregar dados:', error);
         }
     });
 });
 
-                    </script>
-                    <script>
-                    document.getElementById("pesquisarVencidos").addEventListener("click", function() {
-                        // Enviar solicitação AJAX
-                        var xhr = new XMLHttpRequest();
-                        xhr.open("GET", "{% url 'lista_vencidos' %}", true);
-                        xhr.onreadystatechange = function () {
-                            if (xhr.readyState == 4 && xhr.status == 200) {
-                                var data = JSON.parse(xhr.responseText);
-                                console.log(data);
-                                populateTable(data); // Chama a função para popular a tabela
-                                document.querySelector(".sidebar3").classList.add("active");
-                            }
-                        };
-                        xhr.send();
-                    });
+    </script>
+    
+    <script>
+        document.getElementById("pesquisarVencidos").addEventListener("click", function() {
+    loadDataVencidos(1); // Carrega a primeira página ao pesquisar
+});
 
-                    document.querySelector(".close-btn3").addEventListener("click", function() {
-                        document.querySelector(".sidebar3").classList.remove("active");
-                    });
+function loadDataVencidos(page) {
+    // Obtenha os valores selecionados nos select
+    var empresa = document.getElementById("empresaVencidos").value;
+    var regional = document.getElementById("RegionalVencidos").value;
+    var unidade = document.getElementById("UnidadeVencidos").value;
+    var nomeColaborador = document.getElementById("nomeVencidos").value;
+    var matricula = document.getElementById("matriculaVencidos").value;
+    var cpf = document.getElementById("cpfVencidos").value;
+    var cargo = document.getElementById("CargoVencidos").value;
+    var admissao = document.getElementById("admissaoVencidos").value;
+    var desligamento = document.getElementById("desligamentoVencidos").value;
+    var tipoDocumento = document.getElementById("TipoDocumentoVencidos").value;
+    var perPage = document.getElementById("rowsPerPage").value;
 
-                    // Função para popular a tabela com os dados recebidos
-                    function populateTable(data) {
-                        var tbody = document.querySelector("#tabela-relatorio3 tbody");
-                        tbody.innerHTML = ""; // Limpa o conteúdo existente da tabela
-                        for (var i = 0; i < data.length; i++) {
-                            var row = "<tr>";
-                            row += "<td>" + (data[i].empresa || 'Não disponível') + "</td>";
-                            row += "<td>" + (data[i].regional || 'Não disponível') + "</td>";
-                            row += "<td>" + (data[i].unidade || 'Não disponível') + "</td>";
-                            row += "<td>" + (data[i].colaborador || 'Não disponível') + "</td>";
-                            row += "<td>" + (data[i].matricula || 'Não disponível') + "</td>";
-                            row += "<td>" + (data[i].cpf || 'Não disponível') + "</td>";
-                            row += "<td>" + (data[i].admissao || 'Não disponível') + "</td>";
-                            row += "<td>" + (data[i].desligamento || 'Não disponível') + "</td>";
-                            row += "<td>" + (data[i].tipo_documento || 'Não disponível') + "</td>";
-                            row += "<td>" + (data[i].obrigatorio || 'Não disponível') + "</td>";
-                            row += "<td>" + (data[i].dta_documento || 'Não disponível') + "</td>";
-                            row += "<td>" + (data[i].data_vencimento || 'Não disponível') + "</td>";
-                            row += "</tr>";
-                            tbody.innerHTML += row;
-                        }
-                    }
+    // Enviar solicitação AJAX
+    var xhr = new XMLHttpRequest();
+    var url = `{% url 'lista_vencidos' %}?page=${page}&per_page=${perPage}&empresa=${empresa}&regional=${regional}&unidade=${unidade}&nomeColaborador=${nomeColaborador}&matricula=${matricula}&cpf=${cpf}&cargo=${cargo}&admissao=${admissao}&desligamento=${desligamento}&tipoDocumento=${tipoDocumento}`;
+    xhr.open("GET", url, true);
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            var response = JSON.parse(xhr.responseText);
+            var data = response.data;
+            console.log(data);
+            // Chama a função para popular a tabela, passando os valores dos filtros
+            populateTableVencidos(data, empresa, regional, unidade, nomeColaborador, matricula, cpf, cargo, admissao, desligamento, tipoDocumento);
+            updatePaginationVencidos(response.page, response.num_pages);
+            document.querySelector(".sidebar3").classList.add("active");
+        }
+    };
+    xhr.send();
+}
 
-                    </script>
+// Função para popular a tabela com os dados recebidos e aplicar filtros
+function populateTableVencidos(data, empresaFiltro, regionalFiltro, unidadeFiltro, nomeColaboradorFiltro, matriculaFiltro, cpfFiltro, cargoFiltro, admissaoFiltro, desligamentoFiltro, tipoDocumentoFiltro) {
+    var tbody = document.querySelector("#tabela-relatorio3 tbody");
+    tbody.innerHTML = ""; // Limpa o conteúdo existente da tabela
+    for (var i = 0; i < data.length; i++) {
+        // Aplica os filtros (filtros já aplicados no backend)
+        var row = "<tr>";
+        row += "<td>" + (data[i].empresa || 'Não disponível') + "</td>";
+        row += "<td>" + (data[i].regional || 'Não disponível') + "</td>";
+        row += "<td>" + (data[i].unidade || 'Não disponível') + "</td>";
+        row += "<td>" + (data[i].colaborador || 'Não disponível') + "</td>";
+        row += "<td>" + (data[i].matricula || 'Não disponível') + "</td>";
+        row += "<td>" + (data[i].cpf || 'Não disponível') + "</td>";
+        row += "<td>" + (data[i].admissao || 'Não disponível') + "</td>";
+        row += "<td>" + (data[i].desligamento || 'Não disponível') + "</td>";
+        row += "<td>" + (data[i].cargo || 'Não disponível') + "</td>";
+        row += "<td>" + (data[i].tipo_documento || 'Não disponível') + "</td>";
+        row += "<td>" + (data[i].obrigatorio || 'Não disponível') + "</td>";
+        row += "<td>" + (data[i].dta_documento || 'Não disponível') + "</td>";
+        row += "<td>" + (data[i].data_vencimento || 'Não disponível') + "</td>";
+        row += "</tr>";
+        tbody.innerHTML += row;
+    }
+}
+
+function updatePaginationVencidos(currentPage, totalPages) {
+    var pagination = document.querySelector("#pagination");
+    pagination.innerHTML = "";
+
+    var prevButton = document.createElement("button");
+    prevButton.textContent = "<";
+    prevButton.disabled = currentPage === 1;
+    prevButton.addEventListener("click", function() {
+        if (currentPage > 1) {
+            loadDataVencidos(currentPage - 1);
+        }
+    });
+    pagination.appendChild(prevButton);
+
+    for (var i = 1; i <= totalPages; i++) {
+        var pageButton = document.createElement("button");
+        pageButton.textContent = i;
+        pageButton.disabled = i === currentPage;
+        pageButton.addEventListener("click", function() {
+            loadDataVencidos(parseInt(this.textContent));
+        });
+        pagination.appendChild(pageButton);
+    }
+
+    var nextButton = document.createElement("button");
+    nextButton.textContent = ">";
+    nextButton.disabled = currentPage === totalPages;
+    nextButton.addEventListener("click", function() {
+        if (currentPage < totalPages) {
+            loadDataVencidos(currentPage + 1);
+        }
+    });
+    pagination.appendChild(nextButton);
+}
+
+document.querySelector(".close-btn3").addEventListener("click", function() {
+    document.querySelector(".sidebar3").classList.remove("active");
+});
+    </script>
+
+
+
+<div id="documentosAVencerForm" class="form-container"> 
+    <div class="subheader2">
+        <p>DOCUMENTOS A VENCER</p>
+    </div>
+    <form>
+        <div class="form-row">
+            <select id="empresaVencer" name="empresaVencer" onclick="carregarEmpresasVencer()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="empresaVencer">Empresa</label>
+        </div>
+        <div class="form-row">
+            <select id="RegionalVencer" name="RegionalVencer" onclick="carregarRegionalVencer()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="RegionalVencer">Regional</label>
+        </div>
+        <div class="form-row">
+            <select id="UnidadeVencer" name="UnidadeVencer" onclick="carregarUnidadeVencer()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="UnidadeVencer">Unidade</label>
+        </div>
+        <div class="form-row">
+            <input type="text" id="nomeVencer" name="nomeVencer" required>
+            <label for="nomeVencer">Nome do Colaborador</label>
+        </div>
+        <div class="form-row">
+            <input type="text" id="matriculaVencer" name="matriculaVencer" required>
+            <label for="matriculaVencer">Matrícula</label>
+        </div>
+        <div class="form-row">
+            <input type="text" id="cpfVencer" name="cpfVencer" required>
+            <label for="cpfVencer">CPF</label>
+        </div>
+        <div class="form-row">
+            <select id="CargoVencer" name="CargoVencer" onclick="carregarCargoVencer()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="CargoVencer">Cargo</label>
+        </div>
+        <div class="form-row">
+            <div class="date-row">
+                <input type="text" id="admissaoVencer" placeholder="admissao" onfocus="(this.type='date')" onblur="(this.type='text')" pattern="\d{2}/\d{2}/\d{4}" title="Digite a data no formato dd/mm/aaaa">
+            </div>
+            <div class="date-row">
+                <input type="text" id="desligamentoVencer" placeholder="desligamento" onfocus="(this.type='date')" onblur="(this.type='text')" pattern="\d{2}/\d{2}/\d{4}" title="Digite a data no formato dd/mm/aaaa">
+            </div>
+        </div>
+
+        <label for="diasAntecedencia">Dias de Antecedência</label>
+          
+        <div class=" checkbox-container">
+          <label class="checkbox-label">
+            <input type="checkbox" value="15">
+            <span class="checkbox-custom"></span>
+            15
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" value="30">
+            <span class="checkbox-custom"></span>
+            30
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" value="45">
+            <span class="checkbox-custom"></span>
+            45
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" value="60">
+            <span class="checkbox-custom"></span>
+            60
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" value="70">
+            <span class="checkbox-custom"></span>
+            70
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" value="90">
+            <span class="checkbox-custom"></span>
+            90
+          </label>
+        </div>
+        <div class="form-row">
+            <select id="TipoDeDocumentoVencer" name="TipoDeDocumentoVencer" onclick="carregarTipoDeDocumentoVencer()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="TipoDeDocumentoVencer">Tipo de documento</label>
+        </div>                  
+        <div class="form-row button-row">
+            <button id="pesquisarVencer" type="button">Pesquisar</button>
+        </div>
+    </form>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-$(document).ready(function() {
-    $.ajax({
-        url: "{% url 'lista_a_vencer' %}",  // Certifique-se de que esta URL está corretamente configurada em suas urls Django
-        method: 'GET',
-        success: function(response) {
-            var tabela = $('#documentosVencidosTable tbody');
-            console.log(tabela);
-            tabela.empty();  // Limpa a tabela antes de adicionar novos dados
+document.getElementById('admissaoVencer').addEventListener('blur', function() {
+    if (this.value !== '') {
+        var parts = this.value.split('-');
+        var formattedDate = parts[2] + '/' + parts[1] + '/' + parts[0];
+        this.value = formattedDate;
+    }
+});
+document.getElementById('desligamentoVencer').addEventListener('blur', function() {
+    if (this.value !== '') {
+        var parts = this.value.split('-');
+        var formattedDate = parts[2] + '/' + parts[1] + '/' + parts[0];
+        this.value = formattedDate;
+    }
+});
+</script>
 
-            // Processando cada categoria de vencimento dos intervalos
-            response.intervalos.forEach(function(intervalo) {
-                // Adiciona um cabeçalho de categoria para dias para vencer
-                tabela.append('<tr class="categoria"><td colspan="9">Vencendo em ' + intervalo.dias_para_vencer + ' dias</td></tr>');
+    <div class="sidebar4">
+    <button class="close-btn4">X</button>
+    <div class="table-container">
+        <div class="subheader3">
+            <p>RELATÓRIOS</p>
+        </div>
+        <div class="export-buttons">
+          <select id="exportFormat">
+              <option value="xlsx">Exportar para XLSX</option>
+              <option value="csv">Exportar para CSV</option>
+              <option value="pdf">Exportar para PDF</option>
+          </select>
+          <button onclick="authenticateDownload()"><i class="bi bi-download"></i></button>
+        </div>
+        
+        <div class="search-container">
+          <input type="text" id="searchInput" placeholder="Pesquisar...">
+        </div>
+            <div class="rows-per-page">
+                <label for="rowsPerPage">Linhas por página:</label>
+                <select id="rowsPerPage" onchange="changeRowsPerPage()">
+                  <option value="8">8</option>
+                  <option value="10" selected>10</option>
+                  <option value="15">15</option>
+                  <option value="20">20</option>
+                  <option value="40">40</option>
+                  <option value="100">100</option>
+              </select>
+            </div>
+        <table id="tabela-relatorio4">
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th>Regional</th>
+                    <th>Unidade</th>
+                    <th>Nome do Colaborador</th>
+                    <th>Matrícula</th>
+                    <th>CPF</th>
+                    <th>Admissão</th>
+                    <th>Desligamento</th>
+                    <th>Cargo</th>
+                    <th>Documento</th>
+                    <th>Obrigatório</th>
+                    <th>Data Competência</th> 
+                    <th>Data de Vencimento</th>
+                    <th>Dias para Vencer</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Os dados da tabela serão preenchidos dinamicamente aqui -->
+            </tbody>
+        </table>
+        <div class="pagination" id="pagination">
+            <button id="previous-page">&lt; < </button>
+            <span id="page-info"></span>
+            <button id="next-page"> > &gt;</button>
+        </div>
+    </div>
+    
+</div>
 
-                // Adiciona os documentos desta categoria
-                intervalo.documentos.forEach(function(doc) {
-                    tabela.append(
-                        '<tr>' +
-                        '<td>' + (doc.empresa ? doc.empresa : '') + '</td>' +
-                        '<td>' + (doc.regional ? doc.regional : '') + '</td>' +
-                        '<td>' + (doc.unidade ? doc.unidade : '') + '</td>' +
-                        '<td>' + (doc.nome ? doc.nome : '') + '</td>' +
-                        '<td>' + (doc.matricula ? doc.matricula : '') + '</td>' +
-                        '<td>' + (doc.cpf ? doc.cpf : '') + '</td>' +
-                        '<td>' + (doc.cargo ? doc.cargo : '') + '</td>' +
-                        '<td>' + (doc.data_vencimento ? new Date(doc.data_vencimento).toLocaleDateString() : '') + '</td>' +
-                        '<td>' + (doc.tipo_documento ? doc.tipo_documento : '') + '</td>' +
-                        '</tr>'
-                    );
-                });
+
+<script>
+    let dataCache = null;
+
+function fetchData() {
+    if (!dataCache) {
+        return fetch("{% url 'relatorio_vencer_simples' %}")
+            .then(response => response.json())
+            .then(data => {
+                dataCache = data;
+                return data;
+            })
+            .catch(error => {
+                console.error('Erro ao carregar dados:', error);
+                throw error;
             });
-        },
-        error: function() {
-            alert('Erro ao carregar documentos a vencer.');
-        }
+    } else {
+        return Promise.resolve(dataCache);
+    }
+}
+
+function populateSelects() {
+    fetchData()
+        .then(data => {
+            const empresas = new Set();
+            const regionais = new Set();
+            const unidades = new Set();
+            const cargos = new Set();
+            const tiposDocumento = new Set();
+
+            data.forEach(item => {
+                empresas.add(item.empresa);
+                regionais.add(item.regional);
+                unidades.add(item.unidade);
+                cargos.add(item.cargo);
+                tiposDocumento.add(item.tipo_documento);
+            });
+
+            populateSelect('empresaVencer', empresas);
+            populateSelect('RegionalVencer', regionais);
+            populateSelect('UnidadeVencer', unidades);
+            populateSelect('CargoVencer', cargos);
+            populateSelect('TipoDeDocumentoVencer', tiposDocumento);
+        })
+        .catch(error => console.error('Erro ao popular selects:', error));
+}
+
+function populateSelect(selectId, options) {
+    const select = document.getElementById(selectId);
+    select.innerHTML = "";
+
+    const defaultOption = document.createElement('option');
+    defaultOption.value = "";
+    defaultOption.text = "";
+    select.appendChild(defaultOption);
+
+    options.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option;
+        optionElement.text = option;
+        select.appendChild(optionElement);
     });
+}
+
+window.addEventListener("load", populateSelects);
+
+</script>
+
+<script>
+   let paginaAtualVencer = 1;
+
+document.getElementById("pesquisarVencer").addEventListener("click", function() {
+    // Obtenha os valores selecionados nos selects
+    var empresa = document.getElementById("empresaVencer").value;
+    var regional = document.getElementById("RegionalVencer").value;
+    var unidade = document.getElementById("UnidadeVencer").value;
+    var nomeColaborador = document.getElementById("nomeVencer").value;
+    var matricula = document.getElementById("matriculaVencer").value;
+    var cpf = document.getElementById("cpfVencer").value;
+    var cargo = document.getElementById("CargoVencer").value;
+    var admissao = document.getElementById("admissaoVencer").value;
+    var desligamento = document.getElementById("desligamentoVencer").value;
+    var tipoDocumento = document.getElementById("TipoDeDocumentoVencer").value;
+
+    // Enviar solicitação AJAX
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "{% url 'lista_a_vencer' %}", true);
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            var response = JSON.parse(xhr.responseText);
+            var data = response.data;
+            console.log(data);
+            // Chama a função para popular a tabela, passando os valores dos filtros
+            populateTableVencer(data, empresa, regional, unidade, nomeColaborador, matricula, cpf, cargo, admissao, desligamento, tipoDocumento);
+            document.querySelector(".sidebar4").classList.add("active");
+            // Atualiza a variável de página atual
+            paginaAtualVencer = 1;
+        }
+    };
+    xhr.send();
+});
+
+// Função para popular a tabela com os dados recebidos e aplicar filtros
+function populateTableVencer(data, empresaFiltro, regionalFiltro, unidadeFiltro, nomeColaboradorFiltro, matriculaFiltro, cpfFiltro, cargoFiltro, admissaoFiltro, desligamentoFiltro, tipoDocumentoFiltro) {
+    var tbody = document.querySelector("#tabela-relatorio4 tbody");
+    tbody.innerHTML = ""; // Limpa o conteúdo existente da tabela
+    for (var i = 0; i < data.length; i++) {
+        // Aplica os filtros
+        if ((empresaFiltro === 'empresa' || data[i].empresa === empresaFiltro || empresaFiltro === '') &&
+            (regionalFiltro === 'Regional' || data[i].regional === regionalFiltro || regionalFiltro === '') &&
+            (unidadeFiltro === 'Unidade' || data[i].unidade === unidadeFiltro || unidadeFiltro === '') &&
+            (nomeColaboradorFiltro === '' || data[i].colaborador.toLowerCase().includes(nomeColaboradorFiltro.toLowerCase())) &&
+            (matriculaFiltro === '' || data[i].matricula === matriculaFiltro) &&
+            (cpfFiltro === '' || data[i].cpf === cpfFiltro) &&
+            (cargoFiltro === 'Cargo' || data[i].cargo === cargoFiltro || cargoFiltro === '') &&
+            (admissaoFiltro === '' || data[i].admissao === admissaoFiltro) &&
+            (desligamentoFiltro === '' || data[i].desligamento === desligamentoFiltro) &&
+            (tipoDocumentoFiltro === 'Tipo de Documento' || data[i].tipo_documento === tipoDocumentoFiltro || tipoDocumentoFiltro === '')) {
+            var row = "<tr>";
+            row += "<td>" + (data[i].empresa || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].regional || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].unidade || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].colaborador || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].matricula || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].cpf || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].admissao || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].desligamento || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].cargo || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].tipo_documento || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].obrigatorio || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].dta_documento || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].data_vencimento || 'Não disponível') + "</td>";
+            row += "<td>" + (data[i].dias_para_vencer || 'Não disponível') + "</td>";
+            row += "</tr>";
+            tbody.innerHTML += row;
+        }
+    }
+}
+
+document.querySelector(".close-btn4").addEventListener("click", function() {
+    document.querySelector(".sidebar4").classList.remove("active");
 });
 
 </script>
 
 
-                <div id="documentosAVencerForm" class="form-container"> 
-                    <div class="subheader2">
-                        <p>DOCUMENTOS A VENCER</p>
-                    </div>
-                    <form>
-                        <div class="form-row">
-                            <select id="empresaVencer" name="empresa" placeholder="Empresa" onclick="carregarEmpresas()">
-                                <option value="empresa" disabled selected>Empresa</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <select id="RegionalVencer" name="Regional" placeholder="Regional" onclick="carregarRegional()">
-                                <option value="Regional" disabled selected>Regional</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <select id="UnidadeVencer" name="Unidade" placeholder="Unidade" onclick="carregarUnidade()">
-                                <option value="Unidade" disabled selected>Unidade</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <input type="text" id="nomeVencer" name="nome" placeholder="Nome do Colaborador">
-                        </div>
-                        <div class="form-row">
-                            <input type="number" id="matriculaVencer" name="matricula" placeholder="Matrícula">
-                        </div>
-                        <div class="form-row">
-                            <input type="text" id="cpfVencer" name="cpf" placeholder="CPF">
-                        </div>
-                        <div class="form-row">
-                            <select id="CargoVencer" name="Cargo" placeholder="Cargo" onclick="carregarCargo()">
-                                <option value="Cargo" disabled selected>Cargo</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <div class="date-row">
-                                <input type="date" id="admissaoVencer" name="admissao" placeholder="Admissão">
-                            </div>
-                            <div class="date-row">
-                                <input type="date" id="desligamentoVencer" name="desligamento" placeholder="Desligamento">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <select id="TipoDeDocumentoVencer" name="Tipo de Documento" placeholder="Cargo" onclick="carregarTipoDeDocumento()">
-                                <option value="Tipo de Documento" disabled selected>Tipo de Documento</option>
-                            </select>
-                        </div>                  
-                        <div class="form-row button-row">
-                            <button id="pesquisarVencer" type="button">Pesquisar</button>
-                        </div>
-                    </form>
-                </div>
-                
-               <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<!--script>
-$(document).ready(function() {
-    $.ajax({
-        url: "{% url 'lista_a_vencer' %}", // Substitua pela URL correta configurada no Django
-        method: 'GET',
-        success: function(data) {
-            var tabela = $('#documentosVencidosTable tbody');
-            tabela.empty(); // Limpa a tabela antes de adicionar novos dados
 
-            // Processando cada categoria de vencimento
-            Object.keys(data).forEach(function(categoria) {
-                // Adiciona um cabeçalho de categoria
-                tabela.append('<tr class="categoria"><td colspan="9">Vencendo em ' + categoria.replace('_', ' ') + '</td></tr>');
 
-                // Adiciona os documentos desta categoria
-                data[categoria].forEach(function(doc) {
-                    tabela.append(
-                        '<tr>' +
-                        '<td>' + (doc.empresa ? doc.empresa : '') + '</td>' +
-                        '<td>' + (doc.regional ? doc.regional : '') + '</td>' +
-                        '<td>' + (doc.unidade ? doc.unidade : '') + '</td>' +
-                        '<td>' + (doc.nome ? doc.nome : '') + '</td>' +
-                        '<td>' + (doc.matricula ? doc.matricula : '') + '</td>' +
-                        '<td>' + (doc.cpf ? doc.cpf : '') + '</td>' +
-                        '<td>' + (doc.cargo ? doc.cargo : '') + '</td>' +
-                        '<td>' + (doc.data_vencimento ? new Date(doc.data_vencimento).toLocaleDateString() : '') + '</td>' +
-                        '<td>' + (doc.tipo_documento ? doc.tipo_documento : '') + '</td>' +
-                        '</tr>'
-                    );
-                });
-            });
-        },
-        error: function() {
-            alert('Erro ao carregar documentos a vencer.');
+<div id="domingosFeriadosForm" class="form-container">
+    <div class="subheader2">
+        <p>DOMINGOS E FERIADOS (Existente)</p>
+    </div>
+    <form>
+        <div class="form-row">
+            <select id="empresaFeriados" name="empresaFeriados" onclick="carregarEmpresasFeriados()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="empresaFeriados">Empresa</label>
+        </div>
+        <div class="form-row">
+            <select id="regionalFeriados" name="regionalFeriados" onclick="carregarRegionalFeriados()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="regionalFeriados">Regional</label>
+        </div>
+        
+        <div class="form-row">
+            <select id="lojaDocumentos" name="lojaDocumentos" onclick="carregarLojaFeriados()" required>
+                <option value="" disabled selected></option>
+            </select>
+            <label for="lojaDocumentos">Loja</label>
+        </div>
+            <div class="date-row">
+                <input type="text" id="dataDocumento" placeholder="Data" onfocus="(this.type='date')" onblur="(this.type='text')" pattern="\d{2}/\d{2}/\d{4}" title="Digite a data no formato dd/mm/aaaa">
+            </div>
+        <div class="form-row button-row">
+            <button id="pesquisarDomingos" type="button" data-url="{% url 'domingos_feriados' %}">Pesquisar</button>
+        </div>
+    </form>
+</div>
+
+
+
+<script>
+    document.getElementById('dataDocumento').addEventListener('blur', function() {
+        if (this.value !== '') {
+            var parts = this.value.split('-');
+            var formattedDate = parts[2] + '/' + parts[1] + '/' + parts[0];
+            this.value = formattedDate;
         }
     });
+   
+    </script>
+
+<div class="sidebar5">
+    <button class="close-btn5">X</button>
+    <div class="table-container">
+        <div class="subheader3">
+            <p>RELATÓRIOS</p>
+        </div>
+        <div class="export-buttons">
+          <select id="exportFormat">
+              <option value="xlsx">Exportar para XLSX</option>
+              <option value="csv">Exportar para CSV</option>
+              <option value="pdf">Exportar para PDF</option>
+          </select>
+          <button onclick="authenticateDownload()"><i class="bi bi-download"></i></button>
+        </div>
+        
+        <div class="search-container">
+          <input type="text" id="searchInput" placeholder="Pesquisar...">
+        </div>
+            <div class="rows-per-page">
+                <label for="rowsPerPage">Linhas por página:</label>
+                <select id="rowsPerPage" onchange="changeRowsPerPage()">
+                  <option value="8">8</option>
+                  <option value="10" selected>10</option>
+                  <option value="15">15</option>
+                  <option value="20">20</option>
+                  <option value="40">40</option>
+                  <option value="100">100</option>
+              </select>
+            </div>
+        <table id="tabela-relatorio5">
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th>Regional</th>
+                    <th>Loja</th>
+                    <th>Data</th>
+                    <th>Downlaod</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Os dados da tabela serão preenchidos dinamicamente aqui -->
+            </tbody>
+        </table>
+        <div class="pagination" id="pagination">
+            <button id="previous-page">&lt; < </button>
+            <span id="page-info"></span>
+            <button id="next-page"> > &gt;</button>
+        </div>
+    </div>
+    
+</div>
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+const searchButton = document.getElementById('pesquisarDomingos');
+const sidebar = document.querySelector('.sidebar5');
+const closeButton = document.querySelector('.close-btn5');
+const tableBody = document.getElementById('tabela-relatorio5').getElementsByTagName('tbody')[0];
+const searchUrl = searchButton.dataset.url; // Lê a URL do atributo data-url
+
+searchButton.addEventListener('click', function() {
+    const empresaId = document.getElementById('empresaFeriados').value;
+    const regionalId = document.getElementById('regionalDocumentos').value;
+    const lojaId = document.getElementById('lojaDocumentos').value;
+    const dataDocumento = document.getElementById('dataDocumento').value;
+
+    // Formata a data para corresponder ao esperado pelo backend, se necessário
+    const dataFormatada = dataDocumento.split('-').reverse().join('/');
+
+    const queryParams = new URLSearchParams({
+        empresa_id: empresaId !== 'empresa' ? empresaId : '',
+        regional_id: regionalId !== 'regional' ? regionalId : '',
+        loja: lojaId !== 'loja' ? lojaId : '',
+        data: dataFormatada
+    });
+
+    fetch(`${searchUrl}?${queryParams.toString()}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Falha na rede com status: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        tableBody.innerHTML = ''; // Limpa as linhas existentes antes de adicionar novas
+        data.forEach(item => {
+            const row = tableBody.insertRow();
+            row.insertCell(0).textContent = item.empresa;
+            row.insertCell(1).textContent = item.regional;
+            row.insertCell(2).textContent = item.loja;
+            row.insertCell(3).textContent = item.data;
+            row.insertCell(4).innerHTML = `<a href="${item.link_documento}" download><i class="bi bi-download"></i></a>`;
+        });
+        sidebar.classList.add('active'); // Abre o sidebar após carregar os dados
+    })
+    .catch(error => console.error('Erro ao carregar dados:', error));
 });
-</script-->
 
-    <div id="DocumentosAuditoriasForm" class="form-container">
-        <div class="subheader2">
-            <p>DOCUMENTOS PARA AUDITORIAS</p>
-        </div>
-        <form>
-            <div class="form-row">
-                <select id="empresa" name="empresa" placeholder="Empresa" onclick="carregarEmpresas()">
-                    <option value="empresa" disabled selected>Empresa</option>
-                </select>
-            </div>
-            <div class="form-row">
-                <select id="Regional" name="Regional" placeholder="Regional" onclick="carregarRegional()">
-                    <option value="Regional" disabled selected>Regional</option>
-                </select>
-            </div>
-            <div class="form-row">
-                <select id="Unidade" name="Unidade" placeholder="Unidade" onclick="carregarUnidade()">
-                    <option value="Unidade" disabled selected>Unidade</option>
-                </select>
-            </div>
-            <div class="form-row">
-                <input type="text" id="nome" name="nome" placeholder="Nome do Colaborador">
-            </div>
-            <div class="form-row">
-                <input type="text" id="matricula" name="matricula" placeholder="Matrícula">
-            </div>
-            <div class="form-row">
-                <input type="text" id="cpf" name="cpf" placeholder="CPF">
-            </div>
-            <div class="form-row">
-                <select id="Cargo" name="Cargo" placeholder="Cargo" onclick="carregarCargo()">
-                    <option value="Cargo" disabled selected>Cargo</option>
-                </select>
-            </div>
-            <div class="form-row">
-                <div class="date-row">
-                    <input type="date" id="admissao" name="admissao" placeholder="Admissão">
-                </div>
-                <div class="date-row">
-                    <input type="date" id="desligamento" name="desligamento" placeholder="Desligamento">
-                </div>
-            </div>
+closeButton.addEventListener('click', function() {
+    sidebar.classList.remove('active');
+});
+});
 
-            <div class="form-row">
-                <select id="situacao" name="situacao" placeholder="Situação">
-                    <option value="" disabled selected> Situação </option>
-                    <option value="ativo">Ativo</option>
-                    <option value="inativo">Inativo</option>
-                </select>
-            </div>
-            <div class="form-row">
-                <select id="Tipo de Documento" name="Tipo de Documento" placeholder="Cargo" onclick="carregarTipoDeDocumento()">
-                    <option value="Tipo de Documento" disabled selected>Tipo de Documento</option>
-                </select>
-            </div>  
-            <div class="form-row button-row">
-                <button type="submit">Pesquisar</button>
-            </div>
-        </form>
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchFeriadoData();
+    });
+    
+    function fetchFeriadoData() {
+        fetch("{% url 'domingos_feriados' %}", {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Falha na rede com status: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(feriadoData => {
+            console.log('Dados recebidos:', feriadoData); // Log dos dados recebidos
+            fillCompanyOptions(feriadoData);
+            fillStoreOptions(feriadoData);
+            fillRegionOptions(feriadoData);
+        })
+        .catch(error => console.error('Erro ao carregar dados:', error));
+    }
+    
+    function fillCompanyOptions(companyData) {
+        var empresaSelectElement = document.getElementById("empresaFeriados");
+        empresaSelectElement.innerHTML = ""; // Limpa o select antes de adicionar novas opções
+    
+        // Adiciona a opção padrão
+        var defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.text = "";
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        empresaSelectElement.appendChild(defaultOption);
+    
+        var uniqueCompanies = new Set(); // Usamos um Set para rastrear as empresas adicionadas
+    
+        companyData.forEach(function (company) {
+            if (!uniqueCompanies.has(company.empresa)) { // Verifica se a empresa já foi adicionada
+                var option = document.createElement("option");
+                option.value = company.id; // Define o valor do option como o ID da empresa
+                option.text = company.empresa; // Exibe o nome da empresa no option
+                empresaSelectElement.appendChild(option);
+                uniqueCompanies.add(company.empresa); // Adiciona o nome da empresa ao Set
+            }
+        });
+    }
+    
+    function fillStoreOptions(storeData) {
+        var storeSelectElement = document.getElementById("lojaDocumentos");
+        storeSelectElement.innerHTML = ""; // Limpa o select antes de adicionar novas opções
+    
+        // Adiciona a opção padrão
+        var defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.text = "";
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        storeSelectElement.appendChild(defaultOption);
+    
+        storeData.forEach(function (store) {
+            var option = document.createElement("option");
+            option.value = store.loja; // Assumindo que 'loja' é o identificador único da loja
+            option.text = store.loja; // Exibindo o mesmo identificador único como texto da opção
+            storeSelectElement.appendChild(option);
+        });
+    }
+    
+    function fillRegionOptions(regionData) {
+        var regionalSelectElement = document.getElementById('regionalFeriados');
+        regionalSelectElement.innerHTML = ""; // Limpa o select antes de adicionar novas opções
+    
+        // Adiciona a opção padrão
+        var defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.text = "";
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        regionalSelectElement.appendChild(defaultOption);
+    
+        var uniqueRegions = new Set();
+    
+        regionData.forEach(function (item) {
+            if (item.regional && !uniqueRegions.has(item.regional)) {
+                uniqueRegions.add(item.regional);
+                var option = new Option(item.regional, item.regional); // Usar o nome regional como valor
+                regionalSelectElement.appendChild(option);
+            }
+        });
+    }
+    </script>
+    
+
+    
+<div id="RelatoriosGerenciaisForm" class="form-container">
+    <div class="subheader2">
+        <p>RELATÓRIOS GERENCIAIS</p>
     </div>
-
-
-
-    <div id="RelatoriosGerenciaisForm" class="form-container">
-        <div class="subheader2">
-            <p>RELATÓRIOS GERENCIAIS</p>
-        </div>
-        <form>
-            <div class="form-row">
-                <div class="date-row">
-                    <input type="date" id="dados ate o dia" name="dados ate o dia" placeholder="Dados até o dia">
-                </div>
-            </div>            
-            
-            <div class="form-row button-row">
-                <button type="submit">Pesquisar</button>
+    <form>
+        <div class="form-row">
+            <div class="date-row">
+                <input type="date" id="dataInput" name="dados ate o dia" placeholder="Dados até o dia" onchange="atualizarCabecalho()"> <!-- Campo de entrada de data -->
             </div>
-        </form>
+        </div>            
+        
+        <div class="form-row button-row">
+            <button id="pesquisarGerencial" type="button">Pesquisar</button>
+        </div>
+    </form>
+</div>
+<script>
+    function atualizarCabecalho() {
+        var dataSelecionada = document.getElementById("dataInput").value; // Obtém a data selecionada
+        var cabecalho = document.getElementById("cabecalho"); // Obtém o elemento do cabeçalho
+    
+        cabecalho.textContent = "Relatório Gerencial data: " + formatarData(dataSelecionada); // Atualiza o texto do cabeçalho com a data formatada
+    }
+    
+    function formatarData(data) {
+        var partesData = data.split('-'); // Divide a data em partes (ano, mês, dia)
+        var ano = partesData[0];
+        var mes = partesData[1];
+        var dia = partesData[2];
+        
+        // Formata a data como "dia/mês/ano"
+        return dia + "/" + mes + "/" + ano;
+    }
+    </script>
+<!-- Container dos gráficos -->
+<div id="graficosContainer">
+<span id="fecharContainer">&times;</span> <!-- Botão de fechar -->
+<h2 id="cabecalho" style="background-color: #723588; color: white; padding: 10px;">Relatório Gerencial data:</h2> <!-- Cabeçalho do container -->
+<div style="display: flex;">
+    <div style="margin-right: 20px;">
+        <img src="{% static 'bootstrap/images/AEGEA/logo/trofeu.png' %}" alt="Troféu" style="width: 100px; height: auto;">
     </div>
+    <div>
+        <canvas id="graficoUnidades" width="1100" height="450"></canvas>
+    </div>
+</div>
+<div style="display: flex;">
+    <div style="margin-right: 20px;">
+        <img src="{% static 'bootstrap/images/AEGEA/logo/trofeu.png' %}" alt="Troféu" style="width: 100px; height: auto;">
+    </div>
+    <div>
+        <canvas id="graficoEmpresas" width="1100" height="450"></canvas>
+    </div>
+</div>
+</div>
+
+
+
+
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    document.getElementById('pesquisarGerencial').addEventListener('click', function() {
+      fetch("{% url 'relatorio_gerencias' %}")
+      .then(response => response.json())
+  .then(data => {
+    const unidades = data.unidades;
+    const nomesUnidades = unidades.map(unidade => unidade.nome);
+    const totalPendenciasUnidades = unidades.map(unidade => unidade.total_pendencias);
+
+    const empresas = data.empresas;
+    const nomesEmpresas = empresas.map(empresa => empresa.nome);
+    const totalPendenciasEmpresas = empresas.map(empresa => empresa.total_pendencias);
+
+    // Mostra o container dos gráficos
+    document.getElementById('graficosContainer').style.display = 'block';
+
+    // Criando o gráfico de unidades
+    const ctxUnidades = document.getElementById('graficoUnidades').getContext('2d');
+    new Chart(ctxUnidades, {
+      type: 'bar',
+      data: {
+        labels: nomesUnidades,
+        datasets: [{
+          label: 'Quantidade de Unidades com Menos Pendências',
+          data: totalPendenciasUnidades,
+          backgroundColor: '#4B87B9',
+          borderColor: '#4B87B9',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    // Criando o gráfico de empresas
+    const ctxEmpresas = document.getElementById('graficoEmpresas').getContext('2d');
+    new Chart(ctxEmpresas, {
+      type: 'bar',
+      data: {
+        labels: nomesEmpresas,
+        datasets: [{
+          label: 'Quantidade de Empresas com Menos Pendências',
+          data: totalPendenciasEmpresas,
+          backgroundColor: '#4B87B9',
+          borderColor: '#4B87B9',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  })
+  .catch(error => console.error('Erro ao buscar dados:', error));
+});
+
+// Adiciona evento de fechar ao botão de fechar
+document.getElementById('fecharContainer').addEventListener('click', function() {
+  document.getElementById('graficosContainer').style.display = 'none';
+});
+</script>
+
 
 
     <script src='{% static "bootstrap/js/src/relatorios.js" %}'></script>

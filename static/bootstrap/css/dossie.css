@@ -13,7 +13,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    margin-top: 50px; /* Ajustar a margem conforme necessário */
+    margin-top: 70px; /* Ajustar a margem conforme necessário */
     top: calc(80px + 400px); /* Altura do .subheader + 2 pixels */
 
 }
@@ -42,7 +42,7 @@ select {
   /* Add your other styles here */
 }
 .floating-labels-form input[type="text"]:focus, .floating-labels-form input[type="date"]:focus, .floating-labels-form select:focus {
-  border-color: #723588;
+  border-color: #1e20a7;
 }
 
 .floating-labels-form label {
@@ -61,7 +61,7 @@ select {
 .floating-labels-form select:focus + label, .floating-labels-form select:not(:placeholder-shown) + label {
   top: -10px;
   font-size: 12px;
-  color: #723588;
+  color: #4682B4;
 }
 
 .floating-labels-form select:required:invalid {
@@ -111,7 +111,7 @@ select {
 }
 
 .button-row button {
-  background-color: #723588;
+  background-color: #4682B4;
   color: #fff;
   padding: 10px;
   border: none;
@@ -122,11 +122,11 @@ select {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Adiciona uma sombra sutil */
 }
 .button-row button:hover {
-  background-color:#723588;
+  background-color:#4682B4;
 }
 .subheader2 {
   border-radius: 8px;
-    background-color: #723588;
+    background-color: #4682B4;
     color: #ffffff;
     padding: 15px;
     position: fixed;
@@ -168,6 +168,7 @@ tbody tr:nth-child(odd) {
   cursor: pointer;
   color: rgb(0, 0, 0); /* Define a cor do ícone como azul */
   font-size: 24px; /* Define o tamanho da fonte do ícone */
+  background-color: none;
 }
 
 .export-buttons, .search-container, .rows-per-page {
@@ -177,7 +178,7 @@ tbody tr:nth-child(odd) {
 
 .subheader3 {
 border-radius: 8px;
-  background-color: #723588;
+  background-color: #4682B4;
   color: #ffffff;
   padding: 15px;
   left: 0;
@@ -192,18 +193,25 @@ border-radius: 8px;
 margin: 0;
 }
 
-/* Estilizando o ícone dentro do botão */
-button i.bi-download {
-  /* Adicione estilos conforme necessário */
-  background-color: #723588; /* Cor de fundo */
-  color: #fff; /* Cor do texto */
-  padding: 5px 15px; /* Espaçamento interno */
-  border: 10%; /* Sem borda */
-  border-radius: 5px; /* Borda arredondada */
-/* Adicione estilos conforme necessário */
-font-size: 15px; /* Tamanho do ícone */
-text-decoration:none;
+.export-buttons button {
+  background-color: #4682B4; /* Cor de fundo azul para o botão */
+  border: none; /* Remove a borda padrão do botão */
+  color: white; /* Cor do texto e do ícone dentro do botão */
+  padding: 6px 12px; /* Espaçamento interno do botão */
+  border-radius: 5px; /* Bordas arredondadas do botão */
+  cursor: pointer; /* Cursor de ponteiro ao passar o mouse */
+  display: inline-flex; /* Alinha o ícone e o texto no centro */
+  align-items: center; /* Alinha verticalmente o conteúdo */
+  justify-content: center; /* Alinha horizontalmente o conteúdo */
 }
+
+.export-buttons button i.bi-download {
+  color: white; /* Cor branca para o ícone */
+  font-size: 16px; /* Tamanho do ícone */
+  
+}
+
+
 .table-container table tr:nth-child(even) {
   background-color: #e1e1e1; /* Define a cor de fundo para as linhas pares */
 }
@@ -214,7 +222,7 @@ background-color: #ffffff; /* Define a cor de fundo das linhas ímpares como bra
 
 /* Adiciona um efeito de transição suave na mudança de cor de fundo */
 .table-container table tr:hover {
-  background-color: #FFDD00;; /* Altera a cor de fundo ao passar o mouse */
+  background-color: #6494bb31;; /* Altera a cor de fundo ao passar o mouse */
   transition: background-color 0.3s ease; /* Adiciona uma transição suave */
 }
 
@@ -316,7 +324,7 @@ color: red;
 }
 .pagination-button {
   /* Adicione estilos compartilhados para ambos os botões aqui */
-  background-color: #723588;
+  background-color: #4682B4;
   color: #fff;
   border: none;
   padding: 3px 13px;
@@ -345,7 +353,7 @@ color: red;
 }
 
 .rows-per-page select:focus {
-  border-color: #723588;
+  border-color: #4682B4;
 }
 
 .rows-per-page label {
@@ -365,7 +373,7 @@ color: red;
   opacity: 1;
   transform: translate(0, -35px);
   font-size: 12px;
-  color: #723588;
+  color: #4682B4;
 }
 
 .rows-per-page select:required:invalid + label {
@@ -374,3 +382,19 @@ color: red;
 }
 
 
+.btn-proximo,
+.btn-anterior {
+    /* Estilos comuns para ambos os botões */
+    background-color: #4682B4; /* Cor de fundo azul */
+    color: #fff; /* Cor do texto branca */
+    padding: 5px 10px; /* Espaçamento interno */
+    border: none; /* Sem borda */
+    border-radius: 3px; /* Bordas arredondadas */
+    cursor: pointer; /* Cursor ao passar */
+    margin: 0 5px; /* Margem entre os botões */
+}
+
+.btn-proximo:hover,
+.btn-anterior:hover {
+    background-color: #845894; /* Cor de fundo azul mais escura quando hover */
+}

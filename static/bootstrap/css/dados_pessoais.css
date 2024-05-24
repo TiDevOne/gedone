@@ -48,7 +48,7 @@ header p {
 
 .header {
   color: #ffffff;
-  background-color: #723588;
+  background-color: #4682B4;
   display: flex;
   flex-direction: column;
   align-items: center; /* Centraliza verticalmente os elementos dentro do .header */
@@ -91,7 +91,7 @@ table {
 }
 
 thead th {
-  background-color: #723588; /* Define a cor de fundo para os cabeçalhos */
+  background-color: #4682B4; /* Define a cor de fundo para os cabeçalhos */
   color: white; /* Define a cor do texto para os cabeçalhos */
   padding: 10px;
   border: 1px solid #ddd;
@@ -113,7 +113,7 @@ tbody tr:nth-child(odd) {
   background-color: #6361632d;
 }
 tbody tr:hover {
-  background-color: #f4ff00;
+  background-color: #c4dff536;
 }
 
 /* Estilos para o elemento h1 */
@@ -128,7 +128,7 @@ h2{
 
 
 .table-title {
-  background-color: #FFDD00;
+  background-color: #4683b449;
   color: #000000;
   font-weight: bold;
   height: 50px; /* Ajuste o valor conforme necessário */
@@ -172,7 +172,7 @@ h2{
 }
 
 .DownloadButton button {
-  background-color: #723588;
+  background-color: #4682B4;
   color: white;
   padding: 8px 16px;
   border-radius: 40px 15px ;
@@ -181,7 +181,28 @@ h2{
 }
 
 .DownloadButton button:hover {
-  background-color: #bda0c8;
+  background-color: #4683b486;
+}
+
+.DownloadButton #BaixarTodos {
+  margin-left: 80px; /* Adiciona espaço à esquerda do segundo botão */
+}
+/* Adiciona uma animação pulsar */
+@keyframes pulsate {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Aplica a animação de pulsar ao botão Compliance */
+.DownloadButton #ComplianceButton {
+  animation: pulsate 2s infinite; /* Repete a animação infinitamente */
 }
 
 /* Adaptação para telas menores */
@@ -209,7 +230,7 @@ h2{
   justify-content: center;
   align-items: center;
   /*overflow-y: auto;  Adiciona uma barra de rolagem vertical caso o conteúdo seja maior que o tamanho do card */
-
+  
 }
 @keyframes pulse {
   0% {
@@ -227,8 +248,7 @@ h2{
   display: flex;
   justify-content: center;
   align-items: center;
-  background-image: linear-gradient(to right top, #ffffff, #ffeeff, #ffd7da, #ffdc78, #f4ff00);
-  width: 700px;
+  background-image: linear-gradient(to right top, #4682b4, #2594c1, #00a5c7, #00b6c6, #00c6c0, #16c9c3, #23cdc6, #2dd0c9, #4ec8d4, #71bed5, #8db5cc, #9fadbd);  width: 700px;
   height: 650px;
   animation: pulse 2s infinite; /* Aplica a animação pulse por 2 segundos repetidamente */
 }
@@ -241,7 +261,8 @@ h2{
   height: 400px;
   overflow-y: auto; /* Adiciona uma barra de rolagem vertical caso o conteúdo seja maior que o tamanho do card */
   border-radius: 10px;
-  box-shadow: 0 6px 10px #fff; /* Adiciona uma sombra suave */
+  box-shadow: 0 0 10px #fff, 0 6px 10px #fff, 0 -6px 10px #fff; /* Sombra suave em todas as direções */
+  font-weight: bold;
   color: black;
 }
 
@@ -252,13 +273,13 @@ h2{
 
 /* Estilizando o controle deslizante da barra de rolagem */
 .card::-webkit-scrollbar-thumb {
-  background-color: #723588; /* Cor do controle deslizante */
+  background-color: #4682B4; /* Cor do controle deslizante */
   border-radius: 10px; /* Borda arredondada */
 }
 
 /* Estilizando a barra de rolagem quando o mouse estiver sobre ela */
 .card:hover::-webkit-scrollbar-thumb {
-  background-color: #723588 /* Cor do controle deslizante quando o mouse estiver sobre ele */
+  background-color: #4682B4 /* Cor do controle deslizante quando o mouse estiver sobre ele */
 }
 
 .card-header {
@@ -297,7 +318,7 @@ h2{
 }
 
 h3{
-  background-color: #723588;
+  background-color: #4682B4;
 }
 
 .tituloCompliance h3{
@@ -307,7 +328,7 @@ h3{
 
 .tituloCompliance button{
   color: #fff;
-  background-color: #723588;
+  background-color: #4682B4;
   cursor: pointer;
   font-weight: bold;
   font-size: 15px;
@@ -349,7 +370,7 @@ h3{
 
 .card-header h2{
   color: rgb(255, 255, 255); /* Altera a cor do texto para vermelho */
-  background-color: #723588;
+  background-color: #4682B4;
 }
 
 .card1 img,
@@ -432,7 +453,7 @@ h3{
 }
 
 #openSidebar {
-  background-color: #723588;
+  background-color: #4682B4;
   color: white;
   border: none;
   padding: 10px;
@@ -446,7 +467,7 @@ h3{
 }
 .Titlereturn {
   color: #fff;
-  background-color: #723588;
+  background-color: #4682B4;
   border: 1px solid white; /* Adiciona uma borda branca de 1px */
   display: flex; /* Usa flexbox para posicionar os elementos */
   justify-content: space-between; /* Distribui os elementos igualmente ao longo do eixo principal */
@@ -474,13 +495,13 @@ h3{
 /* Estilo específico para o ícone cloud-arrow-down-fill */
 .bi-cloud-arrow-down-fill {
   font-size: 24px; /* Define o tamanho do ícone para 24 pixels */
-  color: #723588; /* Define a cor do ícone para azul */
+  color: #4682B4; /* Define a cor do ícone para azul */
 }
 
 /* Estilo específico para o ícone eye */
 .bi-eye {
   font-size: 24px; /* Define o tamanho do ícone para 24 pixels */
-  color: #723588; /* Define a cor do ícone para azul */
+  color: #4682B4; /* Define a cor do ícone para azul */
 
 }
 
@@ -491,7 +512,7 @@ h3{
 .Grupo{
   float: right; /* Alinha o checkbox à direita */
   padding: 0 10px;
-  background-color: #723588;
+  background-color: #4682B4;
   color: white;
   border-radius: 40px  ;
   cursor: pointer;
@@ -535,10 +556,11 @@ tr.linha-vermelho-claro {
   display: none; /* Inicialmente oculto */
 }
 #info-box button{
-  background-color: #723588;
+  background-color: #4682B4;
   color:#ffffff;
 }
 
 .checkbox{
   font-size: 20%;
 }
+

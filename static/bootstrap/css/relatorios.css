@@ -75,10 +75,10 @@ ul li.item-menu{
 }
 
 ul li.ativo{
-    background-color: #723588;
+    background-color: #4682B4;
 }
 ul li.item-menu:hover{
-    background: #FFDD00;
+    background: #ffffff81;
 }
 
 
@@ -94,7 +94,7 @@ ul h1{
   margin: -1%;
   padding: 20px 20px; /* Adiciona preenchimento interno somente nas laterais */
   width: calc(300% - 40px); /* Preenche toda a largura, menos o preenchimento */
-  background-color: #723588; /* Cor de fundo azul escuro */
+  background-color: #4682B4; /* Cor de fundo azul escuro */
   color: #ffffff; /* Cor do texto branco */
   font-size: 120%;
 }
@@ -103,7 +103,7 @@ ul h1 i {
     margin-right: 10px; /* Adiciona um espaço entre o ícone e o texto */
 }
 ul li.item-menu a{
-    color: #ffffff;
+    color: #000000;
     text-decoration: none;
     font-size: 15px;
     padding: 12px 4%;
@@ -174,13 +174,13 @@ nav.menu-lateral::-webkit-scrollbar {
 
 /* Estilizando o controle deslizante da barra de rolagem */
 nav.menu-lateral::-webkit-scrollbar-thumb {
-  background-color: #723588; /* Cor do controle deslizante */
+  background-color: #4682B4; /* Cor do controle deslizante */
   border-radius: 10px; /* Borda arredondada */
 }
 
 /* Estilizando a barra de rolagem quando o mouse estiver sobre ela */
 nav.menu-lateral:hover::-webkit-scrollbar-thumb {
-  background-color: #723588; /* Cor do controle deslizante quando o mouse estiver sobre ele */
+  background-color: #4682B4; /* Cor do controle deslizante quando o mouse estiver sobre ele */
 }
 
 /* ... Seus estilos existentes ... */
@@ -190,9 +190,9 @@ nav.menu-lateral:hover::-webkit-scrollbar-thumb {
 nav.menu-lateral {
   width: 80px;
   height: calc(110vh - 117px); /* Altura máxima ajustada para o tamanho da tela, excluindo o cabeçalho e o subcabeçalho */
-  background-color:#bda0c8; /* Cor de fundo azul escuro */
+  background-color:#4683b481; /* Cor de fundo azul escuro */
   padding: 0; /* Removido o padding */
-  box-shadow: 4px 0 0 #FFDD00;
+  box-shadow: 4px 0 0 #ff0000;
   position: fixed;
   top: 107px;
   left: 0;
@@ -233,7 +233,7 @@ nav.menu-lateral {
 .form-row input:valid + label {
   top: 5px;
   font-size: 12px;
-  color: #723588;
+  color: #4682B4;
 }
 
   .date-row {
@@ -273,7 +273,7 @@ nav.menu-lateral {
   }
 
   .button-row button {
-    background-color: #723588;
+    background-color: #4682B4;
     color: #fff;
     padding: 10px;
     border: none;
@@ -291,7 +291,7 @@ nav.menu-lateral {
 
   .subheader2 {
     border-radius: 8px;
-    background-color: #723588; ;
+    background-color: #4682B4; ;
     color: #ffffff;
     padding: 15px;
     position: fixed;
@@ -356,7 +356,7 @@ body.sem-imagem-fundo {
   display: flex; /* Para centralizar o conteúdo verticalmente */
   align-items: center; /* Centraliza verticalmente */
   justify-content: right; /* Centraliza horizontalmente */
-  z-index: 1;
+  z-index: 3; /* Aumentado para estar à frente do header e subheader */
 }
 
 .sidebar.active {
@@ -376,7 +376,7 @@ body.sem-imagem-fundo {
   display: flex; /* Para centralizar o conteúdo verticalmente */
   align-items: center; /* Centraliza verticalmente */
   justify-content: right; /* Centraliza horizontalmente */
-  z-index: 1;
+  z-index: 3; /* Aumentado para estar à frente do header e subheader */
 }
 
 .sidebar2.active {
@@ -397,19 +397,64 @@ body.sem-imagem-fundo {
   display: flex; /* Para centralizar o conteúdo verticalmente */
   align-items: center; /* Centraliza verticalmente */
   justify-content: right; /* Centraliza horizontalmente */
-  z-index: 1;
+  z-index: 3; /* Aumentado para estar à frente do header e subheader */
 }
 
 .sidebar3.active {
   width: 75%; /* Largura do sidebar quando estiver ativo */
 }
+.sidebar4 {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5); /* Cor meio preto transparente */
+  width: 0;
+  transition: width 0.5s ease; /* Transição suave da largura */
+  overflow-x: hidden; /* Para esconder o conteúdo horizontalmente */
+  overflow-y: auto; /* Adiciona barra de rolagem vertical quando necessário */
+  display: flex; /* Para centralizar o conteúdo verticalmente */
+  align-items: center; /* Centraliza verticalmente */
+  justify-content: right; /* Centraliza horizontalmente */
+  z-index: 3; /* Aumentado para estar à frente do header e subheader */
+}
+
+.sidebar4.active {
+  width: 75%; /* Largura do sidebar quando estiver ativo */
+}
 
 
+
+.sidebar5 {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5); /* Cor meio preto transparente */
+  width: 0;
+  transition: width 0.5s ease; /* Transição suave da largura */
+  overflow-x: hidden; /* Para esconder o conteúdo horizontalmente */
+  overflow-y: auto; /* Adiciona barra de rolagem vertical quando necessário */
+  display: flex; /* Para centralizar o conteúdo verticalmente */
+  align-items: center; /* Centraliza verticalmente */
+  justify-content: right; /* Centraliza horizontalmente */
+  z-index: 3;
+}
+
+.sidebar5.active {
+  width: 75%; /* Largura do sidebar quando estiver ativo */
+}
 .table-container {
   background-color: white;
   max-width: 90%;;
   max-height: 90%; /* Altura máxima da tabela */
   overflow-y: auto; /* Adiciona barra de rolagem vertical caso a tabela seja maior que a altura máxima */
+  overflow-y: auto;
+  background-color: #ffffff; /* Cor de fundo da tabela */
+  border-radius: 8px; /* Borda arredondada */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Sombra suave */
+  padding: 20px; /* Espaçamento interno */
+  margin: 20px; /* Margem externa */
 }
 
 #tabela-relatorio {
@@ -430,7 +475,13 @@ body.sem-imagem-fundo {
   border: none;
   color: white;
   cursor: pointer;
+  font-size: 20px;
+  font-weight: bold; /* Define o texto em negrito */
+
 }
+.close-btn:hover {
+  color: red;
+  }
 /* Estilo para as linhas alternadas da tabela */
 #tabela-relatorio tbody tr:nth-child(even) {
   background-color: #f2f2f2; /* Define a cor de fundo para as linhas pares */
@@ -462,7 +513,13 @@ body.sem-imagem-fundo {
   border: none;
   color: white;
   cursor: pointer;
+  font-size: 20px;
+  font-weight: bold; /* Define o texto em negrito */
+
 }
+.close-btn2:hover {
+  color: red;
+  }
 /* Estilo para as linhas alternadas da tabela */
 #tabela-relatorio2 tbody tr:nth-child(even) {
   background-color: #f2f2f2; /* Define a cor de fundo para as linhas pares */
@@ -493,7 +550,13 @@ body.sem-imagem-fundo {
   border: none;
   color: white;
   cursor: pointer;
+  font-size: 20px;
+  font-weight: bold; /* Define o texto em negrito */
+
 }
+.close-btn3:hover {
+  color: red;
+  }
 /* Estilo para as linhas alternadas da tabela */
 #tabela-relatorio3 tbody tr:nth-child(even) {
   background-color: #f2f2f2; /* Define a cor de fundo para as linhas pares */
@@ -504,13 +567,85 @@ body.sem-imagem-fundo {
 }
 
 
+
+
+#tabela-relatorio4 {
+  width: 100%;
+}
+
+#tabela-relatorio4 th,
+#tabela-relatorio4 td {
+  padding: 8px;
+  text-align: left;
+}
+
+.close-btn4 {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bold; /* Define o texto em negrito */
+
+}
+.close-btn4:hover {
+  color: red;
+  }
+/* Estilo para as linhas alternadas da tabela */
+#tabela-relatorio4 tbody tr:nth-child(even) {
+  background-color: #f2f2f2; /* Define a cor de fundo para as linhas pares */
+}
+
+#tabela-relatorio4 tbody tr:nth-child(odd) {
+  background-color: #ffffff; /* Define a cor de fundo para as linhas ímpares */
+}
+
+
+
+
+#tabela-relatorio5 {
+  width: 100%;
+}
+
+#tabela-relatorio5 th,
+#tabela-relatorio5 td {
+  padding: 8px;
+  text-align: left;
+}
+
+.close-btn5 {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bold; /* Define o texto em negrito */
+}
+.close-btn5:hover {
+  color: red;
+  }
+/* Estilo para as linhas alternadas da tabela */
+#tabela-relatorio5 tbody tr:nth-child(even) {
+  background-color: #f2f2f2; /* Define a cor de fundo para as linhas pares */
+}
+
+#tabela-relatorio5 tbody tr:nth-child(odd) {
+  background-color: #ffffff; /* Define a cor de fundo para as linhas ímpares */
+}
+
 .subheader3 {
   border-radius: 8px;
-    background-color: #723588;
+    background-color: #4682B4;
     color: #ffffff;
     padding: 15px;
     left: 0;
-    width: 100%;
+    width: 140%;
     display: flex;
     justify-content: flex-start;
     align-items: center;
@@ -534,22 +669,25 @@ body.sem-imagem-fundo {
   }
 
 
-
-/* Estilizando o ícone dentro do botão */
-button i.bi-download {
-    /* Adicione estilos conforme necessário */
-    background-color: #723588; /* Cor de fundo */
-    color: #fff; /* Cor do texto */
-    padding: 10px 20px; /* Espaçamento interno */
-    border: none; /* Sem borda */
-    border-radius: 5px; /* Borda arredondada */
-  /* Adicione estilos conforme necessário */
-  font-size: 15px; /* Tamanho do ícone */
-  /* Outras propriedades de estilo do ícone */
-}
+  .export-buttons button {
+    background-color: #4682B4; /* Cor de fundo azul para o botão */
+    border: none; /* Remove a borda padrão do botão */
+    color: white; /* Cor do texto e do ícone dentro do botão */
+    padding: 6px 12px; /* Espaçamento interno do botão */
+    border-radius: 5px; /* Bordas arredondadas do botão */
+    cursor: pointer; /* Cursor de ponteiro ao passar o mouse */
+    display: inline-flex; /* Alinha o ícone e o texto no centro */
+    align-items: center; /* Alinha verticalmente o conteúdo */
+    justify-content: center; /* Alinha horizontalmente o conteúdo */
+  }
+  .export-buttons button i.bi-download {
+    color: white; /* Cor branca para o ícone */
+    font-size: 16px; /* Tamanho do ícone */
+    
+  }
 .pagination button {
   /* Adicione estilos comuns para ambos os botões */
-  background-color: #723588; /* Cor de fundo */
+  background-color: #4682B4; /* Cor de fundo */
   color: #fff; /* Cor do texto */
   padding: 5px 10px; /* Espaçamento interno */
   border: none; /* Sem borda */
@@ -560,7 +698,7 @@ button i.bi-download {
 
 .pagination button:hover {
   /* Estilos quando o mouse passa por cima dos botões */
-  background-color: #723588; /* Cor de fundo */
+  background-color: #4682B4; /* Cor de fundo */
 }
 
 
@@ -582,7 +720,7 @@ button i.bi-download {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 1px solid #723588;
+  border: 1px solid #4682B4;
   display: inline-block;
   position: relative;
   cursor: pointer;
@@ -592,7 +730,7 @@ button i.bi-download {
   content: "";
   width: 10px;
   height: 10px;
-  background: #723588;
+  background: #4682B4;
   border-radius: 50%;
   position: absolute;
   top: 50%;
@@ -600,3 +738,77 @@ button i.bi-download {
   transform: translate(-50%, -50%);
   display: block;
 }
+
+
+
+/* Estilo para o container do gráfico */
+#graficosContainer {
+  width: 1280px;
+  height: 720px;
+  margin: auto;
+  position: fixed; /* Posição fixa para exibir na frente de tudo */
+  top: 50%; /* Centraliza verticalmente */
+  left: 50%; /* Centraliza horizontalmente */
+  transform: translate(-50%, -50%); /* Centraliza completamente */
+  z-index: 9999; /* Coloca na frente de outros elementos */
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  display: none; /* Inicialmente oculto */
+  overflow-y: auto; /* Adiciona barra de rolagem vertical quando necessário */
+  margin-top: 2%;
+  margin-left: 5%;
+}
+
+/* Estilo para o botão de fechar */
+#fecharContainer {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  cursor: pointer;
+}
+
+
+.rows-per-page {
+  position: relative;
+  margin: 20px;
+}
+
+.rows-per-page select {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 16px;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.rows-per-page select:focus {
+  border-color: #4682B4;
+}
+
+.rows-per-page label {
+  position: absolute;
+  top: 18px;
+  left: 10px;
+  pointer-events: none;
+  color: #999;
+  transition: all 0.3s;
+  padding: 0 5px;
+  opacity: 0;
+  transform: translate(0, -20px);
+}
+
+.rows-per-page select:focus + label,
+.rows-per-page select:not(:placeholder-shown) + label {
+  opacity: 1;
+  transform: translate(0, -35px);
+  font-size: 12px;
+  color: #4682B4;
+}
+
+.rows-per-page select:required:invalid + label {
+  opacity: 1;
+  transform: translate(0, 0);
+}
+

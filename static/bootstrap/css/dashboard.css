@@ -6,7 +6,7 @@
 }
 
 .btn-ativo {
-    background-color: #723588;
+    background-color: #4682B4;
     color: white;
     border-top-left-radius: 20px; /* Arredonda a ponta direita */
     border-bottom-left-radius: 20px; /* Arredonda a ponta direita */
@@ -67,7 +67,7 @@
     display: inline-block; /* Para alinhar os itens horizontalmente */
     margin: 0 0px; /* Espaçamento lateral entre os itens */
     border: 1px solid #ccc; /* Borda para destacar os itens */
-    background-color: #723588;
+    background-color: #4682B4;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Adiciona uma sombra suave */
     width: 85%;
     padding: 10px
@@ -138,7 +138,152 @@
         margin-left: 0; /* Remove a margem esquerda dos elementos no cabeçalho */
     }
 }
-#graficos {
-    flex: 1 0 auto;
+
+/* Estilo para o container do gráfico */
+.chart-container {
+    width: 110%;
+    height: auto;
+    border: 1px solid #ccc;  /* Adicione borda para destacar o container */
+    padding: 20px;  /* Adicione padding para espaçamento interno */
+    overflow-x: auto;
+    position: relative;
+    text-align: center;
+    background-color: #ffffff;
+}
+.chart-title {
+    position: sticky;
+    top: 0;
+    background: #ffffff; /* Cor de fundo fixa */
+    text-align: center;
+    z-index: 1000; /* Garante que o título fique acima de outros elementos */
+    padding: 10px 0;
+}
+.chart-content {
+    overflow-x: auto;
+    white-space: nowrap;
+}
+/* Media query para telas pequenas */
+@media (max-width: 768px) {
+    .chart-container {
+        width: 100%;
+        height: auto;  /* Ajuste a altura para se adaptar ao conteúdo */
+        padding: 10px;  /* Reduza o padding em telas menores */
+    }
+}
+
+/* Media query para telas muito pequenas */
+@media (max-width: 480px) {
+    .chart-container {
+        padding: 5px;  /* Reduza ainda mais o padding em telas muito pequenas */
+    }
+}
+  /* Estilo para o gráfico em telas maiores */
+    #grafico-unidades {
+        height: 600px;
+        width: 900px;
+    }
+
+    /* Media query para telas médias (tablets) */
+    @media (max-width: 768px) {
+        #grafico-unidades {
+            height: 500px;
+            width: 700px;
+        }
+    }
+
+    /* Media query para telas pequenas (smartphones) */
+    @media (max-width: 480px) {
+        #grafico-unidades {
+            height: 400px;
+            width: 100%;
+        }
+    }
+
+    .chart-title p {
+        margin: 0;
+        padding-right: 20px; /* Espaçamento entre o título e as legendas */
+    }
+    
+    .chart-legend {
+        display: flex;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-right: 20px; /* Espaçamento entre as legendas */
+    }
+    
+    .legend-color {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+    }
+
+body, html {
+    height: 100%; /* Certifique-se de que o corpo e o HTML ocupem toda a altura da tela */
+    margin: 0;
     display: flex;
+    justify-content: center; /* Centraliza horizontalmente */
+    align-items: center; /* Centraliza verticalmente */
+    background: #f4f4f4; /* Cor de fundo suave */
+}
+#tabela-colaboradores {
+    width: 80%; /* Define a largura da tabela para 80% do contêiner */
+    display: none; /* Inicialmente oculta */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Sombra para destacar a tabela */
+    background: white; /* Cor de fundo para garantir contraste com a sombra */
+    padding: 20px; /* Espaçamento interno ao redor da tabela */
+    position: relative; /* Necessário para posicionamento absoluto do botão de fechar */
+}
+#tabela-colaboradores table {
+    width: 100%; /* Faz com que a tabela expanda para preencher o espaço de #tabela-colaboradores */
+    border-collapse: collapse; /* Para espaçamento uniforme */
+}
+#tabela-colaboradores th, #tabela-colaboradores td {
+    border: 1px solid #ddd; /* Cor da borda */
+    padding: 8px; /* Espaçamento interno */
+    text-align: left; /* Alinhamento do texto */
+}
+#tabela-colaboradores tr:nth-child(even) {
+    background-color: #f2f2f2; /* Cor para linhas pares */
+}
+#tabela-colaboradores tr:nth-child(odd) {
+    background-color: #ffffff; /* Cor para linhas ímpares */
+}
+#tabela-colaboradores tr:hover {
+    background-color: #ddd; /* Cor ao passar o mouse */
+}
+#tabela-colaboradores button {
+    position: absolute; /* Posição absoluta */
+    right: 20px; /* 20px da borda direita */
+    top: 20px; /* 20px da borda superior */
+    cursor: pointer; /* Forma do cursor como ponteiro */
+    border: none; /* Sem borda */
+    background: #cc0000; /* Cor de fundo vermelha */
+    color: white; /* Texto branco */
+    font-size: 16px; /* Tamanho da fonte */
+    border-radius: 50%; /* Borda arredondada */
+    width: 30px; /* Largura do botão */
+    height: 30px; /* Altura do botão */
+    text-align: center; /* Alinhar texto no centro */
+    line-height: 30px; /* Alinhar texto verticalmente */
+}
+#tabela-colaboradores .table-header {
+    background-color: #007bff; /* Cor de fundo azul */
+    color: white; /* Texto branco */
+    font-size: 20px; /* Tamanho da fonte */
+    padding: 10px; /* Espaçamento interno */
+    text-align: center; /* Alinhamento do texto no centro */
+}
+
+#icone-botao-voltar {
+    background-color: #FFDD00;
+    color: #2927278e; /* Cor do ícone */
+    font-size: 30px; /* Tamanho do ícone */
+    border-radius: 60%;
+}
+#botao-voltar .button{
+    border: #ffffff;
 }

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,10 +10,11 @@
             background-color: #000000;
             color: #ffffff;
         }
-    </style>
+</style>
 </head>
 <body>
-    <form method="post" enctype="multipart/form-data" action="{% url 'importar-dados' %}">
+
+<form method="post" enctype="multipart/form-data" action="{% url 'importar-dados' %}">
         {% csrf_token %}
         <!-- Renderização manual do campo para garantir clareza -->
         <p>
@@ -25,13 +27,14 @@
 
     <div id="mensagens">
         {% if messages %}
-        <ul>
-            {% for message in messages %}
-            <li>{{ message }}</li>
-            {% endfor %}
-        </ul>
+            <ul>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
         {% endif %}
     </div>
+{% csrf_token %}
 
     <script>
         // Script para mostrar/ocultar o campo de desligamento
@@ -45,6 +48,19 @@
                 campoDesligamento.style.display = 'none';
             }
         });
+
+                const form = document.querySelector('form');
+const fileInput = document.querySelector('#arquivo_csv');
+
+form.addEventListener('submit', (event) => {
+    const file = fileInput.files[0];
+
+    if (!file || !file.type.match('text/csv')) {
+        event.preventDefault();
+        alert('O arquivo enviado não é um arquivo CSV válido.');
+    }
+});
     </script>
 </body>
 </html>
+

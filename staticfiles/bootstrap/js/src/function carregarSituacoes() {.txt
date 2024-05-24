@@ -1,0 +1,32 @@
+function carregarSituacoes() {
+      // Obtém o valor selecionado
+      var selectedValue = document.getElementById('situação').value;
+
+      // Limpa o dropdown das situações antes de carregar as novas opções
+      var selectSituacao = document.getElementById('situação');
+      selectSituacao.innerHTML = ''; // Limpa todas as opções existentes
+
+      // Adiciona uma opção vazia como placeholder
+      var placeholderOption = document.createElement('option');
+      placeholderOption.value = '';
+      placeholderOption.text = 'Situação';
+      placeholderOption.disabled = true;
+      selectSituacao.appendChild(placeholderOption);
+
+      // Adicione aqui a URL correspondente para carregar as situações
+      fetch('{% url "carregar_situacoes" %}')
+          .then(response => response.json())
+          .then(data => {
+              // Percorre os dados recebidos e adiciona uma opção para cada situação
+              data.forEach(situacao => {
+                  var option = document.createElement('option');
+                  option.value = situacao.id;
+                  option.text = situacao.nome; // Coloque aqui o campo correto da situação
+                  selectSituacao.appendChild(option);
+              });
+
+              // Define o valor selecionado novamente
+              document.getElementById('situação').value = selectedValue;
+          })
+          .catch(error => console.error('Erro ao carregar as situações:', error));
+  }

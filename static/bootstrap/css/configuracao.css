@@ -502,6 +502,16 @@ ul li.item-menu2 a .txt-link{
   padding: 10px;
 }
 
+#exportFormat4,
+#exportFormat3,
+#exportFormat2,
+#exportFormat{
+  width: 20%;
+  margin-top: 20px;
+  padding: 10px;
+}
+
+
 #fecharFormulario{
   color: #fff;
   position: fixed;
@@ -584,10 +594,15 @@ ul li.item-menu2 a .txt-link{
   }
 
   /* Estilize a janela de edição */
+  #modalEditarUnidade,
+  #modalEditarRegional,
   #modalEditar {
       z-index: 9999; /* Z-index maior que o do fundo desfocado */
       /* Adicione outros estilos conforme necessário */
   }
+  #salvarEdicaoUnidade,
+  #salvarEdicaoRegional,
+  #salvarEdicaoEmpresa,
   #salvarEdicaoGrupoDocumento,
   #salvarEdicao {
     background-color: #723588;
@@ -597,6 +612,9 @@ ul li.item-menu2 a .txt-link{
     border: none; /* Remove a borda */
     cursor: pointer;
   }
+  #salvarEdicaoUnidade:hover,
+  #salvarEdicaoRegional:hover,
+  #salvarEdicaoEmpresa:hover,
   #salvarEdicaoGrupoDocumento:hover,
   #salvarEdicao:hover {
     background-color: #8c4fa8; /* Altera a cor de fundo ao passar o mouse */
@@ -604,6 +622,8 @@ ul li.item-menu2 a .txt-link{
   
 
 /* Estilize a janela de edição de Grupo de Documento */
+#modalEditarEmpresa,
+#modalEditarFuncionario,
 #modalEditarGrupoDocumento {
   z-index: 9999; /* Z-index maior que o do fundo desfocado */
   /* Adicione outros estilos conforme necessário */
@@ -628,14 +648,26 @@ ul li.item-menu2 a .txt-link{
   z-index: 9999; /* Z-index maior que o do fundo desfocado */
   /* Adicione outros estilos conforme necessário */
 }
-/* Estilos para os selects */
-.selects-container {
-  display: flex;
+
+#janelaFuncionario{
+  width: 50%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999; /* Z-index maior que o do fundo desfocado */
+  /* Adicione outros estilos conforme necessário */
 }
 
-/* Estilos adicionais para cada select se necessário */
-.selects-container select {
-  margin-right: 10px; /* Espaçamento entre os selects */
+#janelaUnidade,
+#janelaRegionais{
+  width: 50%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999; /* Z-index maior que o do fundo desfocado */
+  /* Adicione outros estilos conforme necessário */
 }
 .fecharEmpresa {
   float: right; /* Para alinhar o ícone à direita dentro do h1 */
@@ -644,6 +676,19 @@ ul li.item-menu2 a .txt-link{
   margin-left: 10px; /* Para adicionar um espaço entre o texto e o ícone */
 }
 
+.fecharFuncionario{
+  float: right; /* Para alinhar o ícone à direita dentro do h1 */
+  color: rgb(255, 255, 255); /* Cor do ícone */
+  cursor: pointer; /* Cursor do mouse */
+  margin-left: 10px; /* Para adicionar um espaço entre o texto e o ícone */
+}
+.fecharUnidade,
+.fecharRegionais {
+  float: right; /* Para alinhar o ícone à direita dentro do h1 */
+  color: rgb(255, 255, 255); /* Cor do ícone */
+  cursor: pointer; /* Cursor do mouse */
+  margin-left: 10px; /* Para adicionar um espaço entre o texto e o ícone */
+}
 #janelaEmpresa{
   width: 50%;
   position: fixed;
@@ -680,6 +725,9 @@ label {
   font-size: 14px;
 }
 
+#cadastrarUnidade,
+#cadastrarRegionais,
+#cadastrarFuncionario,
 #btnCadastrarTipoDocumento,
 #cadastrarGrupoDocumento,
 #cadastrar,
@@ -695,6 +743,7 @@ label {
 
 }
 
+#cadastrarFuncionario,
 #btnCadastrarTipoDocumento:hover,
 #cadastrarGrupoDocumento:hover,
 #cadastrar:hover,
@@ -702,6 +751,9 @@ label {
   background-color: #723588;
 }
 
+#abrirFormularioUnidade,
+#abrirFormularioRegionais,
+#abrirFormularioFuncionario,
 #abrirFormularioTipoDocumento,
 #abrirFormularioGrupoDocumento,
 #abrirFormularioArea,
@@ -712,3 +764,83 @@ label {
   cursor: pointer;
 }
 
+ .input-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px; /* Espaço entre as colunas */
+        }
+
+        .column {
+            flex: 1;
+        }
+
+        .input-container {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .input-container input,
+        .input-container select {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .input-container input:focus,
+        .input-container select:focus {
+            border-color: #723588;
+        }
+
+        .input-container label {
+            position: absolute;
+            top: 50%;
+            left: 8px;
+            transform: translateY(-50%);
+            background: white;
+            padding: 0 4px;
+            color: #aaa;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .input-container input:focus + label,
+        .input-container input:not(:placeholder-shown) + label,
+        .input-container select:focus + label,
+        .input-container select:not([value=""]) + label {
+            top: -8px;
+            left: 8px;
+            color: #723588;
+            font-size: 12px;
+        }
+
+        .input-container select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background: none;
+            padding: 8px;
+        }
+
+        #exportButton4,
+        #exportButton3,
+        #exportButton2,
+        #exportButton {
+          background-color:#723588; /* Cor de fundo azul */
+          color: rgb(255, 255, 255); /* Cor do ícone preto */
+          border-radius: 10px; /* Borda meio arredondada */
+          padding: 10px 20px; /* Espaçamento interno */
+          font-size: 16px; /* Tamanho da fonte */
+          border: none; /* Remover borda */
+          cursor: pointer;
+      }
+      
+     
+      
+      
+    

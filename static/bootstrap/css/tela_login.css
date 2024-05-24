@@ -10,7 +10,7 @@
           padding: 0;
           font-family: sans-serif;
           /* Configuração do plano de fundo com imagem centralizada e cobrindo toda a tela */
-          background-image: linear-gradient(to right top, #ffffff, #d4cce5, #af9ac9, #8f69aa, #723588);
+          background-image: linear-gradient(to left bottom, #4682b4, #829ec7, #b2bcd9, #dbdcec, #ffffff);
           background-size: cover;
         }
 
@@ -22,11 +22,12 @@
           width: 400px;
           padding: 40px;
           transform: translate(-50%, -50%);
-          background: #4b1e5b; /* Cor fixa para a caixa de login */
+          background: #0a304e; /* Cor fixa para a caixa de login */
           box-sizing: border-box;
           box-shadow: 0 15px 25px rgba(0, 0, 0, .6);
           border-radius: 10px;
           text-align: center;
+         
         }
 
         /* Estilo para o logotipo na caixa de login */
@@ -72,143 +73,41 @@
           transition: .5s;
         }
 
-        .login-box .user-box input:focus ~ label,
-        .login-box .user-box input:valid ~ label {
-          top: -20px;
-          left: 0;
-          color: #FFDD00;
-          font-size: 12px;
-        }
+        
 
-        /* Estilo para o botão de acesso na caixa de login */
-        .login-box form a {
-          position: relative;
-          display: inline-block;
-          padding: 10px 20px;
-          color: #FFDD00;
-          font-size: 16px;
-          text-decoration: none;
-          text-transform: uppercase;
-          overflow: hidden;
-          transition: .5s;
-          margin-top: 40px;
-          letter-spacing: 4px;
-        }
-
-        .login-box a:hover {
-          background: #FFDD00;
-          color: #fff;
-          border-radius: 5px;
-          box-shadow: 0 0 5px #FFDD00, 0 0 25px #FFDD00, 0 0 50px #FFDD00, 0 0 100px #FFDD00;
-        }
-
-        /* Efeito de animação para o botão de acesso */
-        .login-box a span {
-          position: absolute;
-          display: block;
-        }
-
-        .login-box a span:nth-child(1) {
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 2px;
-          background: linear-gradient(90deg, transparent, #FFDD00);
-          animation: btn-anim1 1s linear infinite;
-        }
-
-        @keyframes btn-anim1 {
-          0% {
-            left: -100%;
-          }
-          50%, 100% {
-            left: 100%;
-          }
-        }
-
-        .login-box a span:nth-child(2) {
-          top: -100%;
-          right: 0;
-          width: 2px;
-          height: 100%;
-          background: linear-gradient(180deg, transparent, #FFDD00);
-          animation: btn-anim2 1s linear infinite;
-          animation-delay: .25s;
-        }
-
-        @keyframes btn-anim2 {
-          0% {
-            top: -100%;
-          }
-          50%, 100% {
-            top: 100%;
-          }
-        }
-
-        .login-box a span:nth-child(3) {
-          bottom: 0;
-          right: -100%;
-          width: 100%;
-          height: 2px;
-          background: linear-gradient(270deg, transparent, #FFDD00);
-          animation: btn-anim3 1s linear infinite;
-          animation-delay: .5s;
-        }
-
-        @keyframes btn-anim3 {
-          0% {
-            right: -100%;
-          }
-          50%, 100% {
-            right: 100%;
-          }
-        }
-
-        .login-box a span:nth-child(4) {
-          bottom: -100%;
-          left: 0;
-          width: 2px;
-          height: 100%;
-          background: linear-gradient(360deg, transparent, #FFDD00);
-          animation: btn-anim4 1s linear infinite;
-          animation-delay: .75s;
-        }
-
-        @keyframes btn-anim4 {
-          0% {
-            bottom: -100%;
-          }
-          50%, 100% {
-            bottom: 100%;
-          }
-        }
+    
+.login-box .user-box input:focus ~ label,
+.login-box .user-box input:valid ~ label {
+  top: -20px;
+  left: 0;
+  color: #ffffff;
+  font-size: 12px;
+}
 
 
-        /*
-    .Termo{
-      text-align: center;
-      position: fixed;
-      color: #000000;
-      top: 85%;
-      left: 34%;
-      right: 34%;
-      font-size: 75%;
-      font-style: italic;
-    }
-    */
 
-    /* Estilo para o link "Esqueci minha senha" */
-.login-box form #forgot-password {
-  color: #fff; /* Cor branca */
-  font-size: 10px;
-  letter-spacing: 3px;
+ /* Estilos para campos preenchidos automaticamente */
+ input:-webkit-autofill,
+ input:-webkit-autofill:hover,
+ input:-webkit-autofill:focus,
+ input:-webkit-autofill:active {
+     transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s;
+     -webkit-transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s;
+     color: #fff !important;
+ }
+
+ .user-box {
+  position: relative;
+}
+
+.user-box .toggle-password {
+  position: absolute;
+  top: 40%;
+  right: 10px;
+  transform: translateY(-50%);
   cursor: pointer;
+  color: #fff;
 }
-.login-box form #forgot-password:hover {
-  color: #FFDD00; /* Cor branca */
-}
-
-
 /* CSS para o modal */
 .modal {
   display: none; /* Oculta o modal por padrão */
@@ -276,16 +175,45 @@ input[type=text] {
   color: #fff;
   text-align: center;
 }
-.login-box button{
-  color: #FFDD00;
-  background-color: transparent;
+/* Estilo do botão Acessar */
+.btn-acessar {
+  position: relative;
   border: none;
- font-size: 20px;
- cursor: pointer;
-}
-.login-box button:hover {
-  background: #FFDD00;
+  color: #000;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.322);
+  outline: none;
   color: #fff;
-  border-radius: 5px;
-  box-shadow: 0 0 5px #FFDD00, 0 0 25px #FFDD00, 0 0 50px #FFDD00, 0 0 100px #FFDD00;
+  margin-top: 35px;
+  
+}
+.btn-acessar:after {
+  position: absolute;
+  content: "";
+  width: 0;
+  height: 100%;
+  top: 0;
+  left: 0;
+  direction: rtl;
+  z-index: -1;
+  box-shadow:
+    -7px -7px 20px 0px #fff9,
+    -4px -4px 5px 0px #fff9,
+    7px 7px 20px 0px #0002,
+    4px 4px 5px 0px #0001;
+  transition: all 0.3s ease;
+  color: #fff
+}
+.btn-acessar:hover {
+  color: #fff;
+}
+.btn-acessar:hover:after {
+  left: auto;
+  right: 0;
+  width: 100%;
+}
+.btn-acessar:active {
+  top: 2px;
 }

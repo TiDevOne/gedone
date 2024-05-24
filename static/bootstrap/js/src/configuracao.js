@@ -50,12 +50,12 @@ document.querySelectorAll('.item-menu').forEach(item => {
 function ocultarFormularios() {
     document.getElementById('AlteraSenhaForm').style.display = 'none';
     document.getElementById('tabelaPermissõesForm').style.display = 'none';
-    document.getElementById('tabelausuariosForm').style.display = 'none';
-    document.getElementById('DocumentosApagadosForm').style.display = 'none';
-    document.getElementById('ApagarDocumentoForm').style.display = 'none';
-    document.getElementById('ErrosRHForm').style.display = 'none';
+    //document.getElementById('tabelausuariosForm').style.display = 'none';
+    //document.getElementById('DocumentosApagadosForm').style.display = 'none';
+    //document.getElementById('ApagarDocumentoForm').style.display = 'none';
+    //document.getElementById('ErrosRHForm').style.display = 'none';
     document.getElementById('ErrosDepartamentosForm').style.display = 'none';
-    document.getElementById('tabelaOcupaçãoForm').style.display = 'none';
+    //document.getElementById('tabelaOcupaçãoForm').style.display = 'none';
     document.getElementById('tabelaTiposDocumentosForm').style.display = 'none';
     document.getElementById('tabelaGruposDocumentosForm').style.display = 'none';
     document.getElementById('tabelaSetorForm').style.display = 'none';
@@ -86,32 +86,35 @@ function abrirAlteraSenha() {
 function abrirPermissões() {
     mostrarFormulario('tabelaPermissõesForm');
 }
-
-// Função para abrir o formulário de cadastros de funcionários
-function abrirusuarios() {
-    mostrarFormulario('tabelausuariosForm');
+//Função para abrir o formulário de cadastros de funcionários
+function abrirErrosDepartamentos() {
+  mostrarFormulario('ErrosDepartamentosForm');
 }
-
 // Função para abrir o formulário de cadastros de funcionários
+//function abrirusuarios() {
+    //mostrarFormulario('tabelausuariosForm');
+//}
+
+/*/ Função para abrir o formulário de cadastros de funcionários
 function abrirDocumentosApagados() {
     mostrarFormulario('DocumentosApagadosForm');
 }
-// Função para abrir o formulário de cadastros de funcionários
+//Função para abrir o formulário de cadastros de funcionários
 function abrirApagarDocumento() {
-    mostrarFormulario('ApagarDocumentoForm');
+   mostrarFormulario('ApagarDocumentoForm');
 }
-// Função para abrir o formulário de cadastros de funcionários
-function abrirErrosRH() {
-    mostrarFormulario('ErrosRHForm');
+/ Função para abrir o formulário de cadastros de funcionários
+ function abrirErrosRH() {
+   mostrarFormulario('ErrosRHForm');
 }
-// Função para abrir o formulário de cadastros de funcionários
+Função para abrir o formulário de cadastros de funcionários
 function abrirErrosDepartamentos() {
     mostrarFormulario('ErrosDepartamentosForm');
-}
+} */
 // Função para abrir o formulário de cadastros de funcionários
-function abrirOcupação() {
-    mostrarFormulario('tabelaOcupaçãoForm');
-}
+//function abrirOcupação() {
+   // mostrarFormulario('tabelaOcupaçãoForm');
+//}
 // Função para abrir o formulário de cadastros de funcionários
 function abrirTiposDocumentos() {
     mostrarFormulario('tabelaTiposDocumentosForm');
@@ -137,7 +140,7 @@ function abrirUnidades() {
 function abrirRegionais() {
     mostrarFormulario('tabelaRegionaisForm');
 }
-// Função para abrir o formulário de cadastros de funcionários
+//Função para abrir o formulário de cadastros de funcionários
 function abrirEstabelecimento() {
     mostrarFormulario('tabelaEstabelecimentoForm');
 }
@@ -168,12 +171,12 @@ function abrirAtualizarBanco() {
 // Adiciona eventos de clique para as opções de formulário
 document.querySelector('[data-target="AlteraSenhaForm"]').addEventListener('click', abrirAlteraSenha);
 document.querySelector('[data-target="PermissõesForm"]').addEventListener('click', abrirPermissões);
-document.querySelector('[data-target="usuariosForm"]').addEventListener('click', abrirusuarios);
-document.querySelector('[data-target="DocumentosApagadosForm"]').addEventListener('click', abrirDocumentosApagados);
-document.querySelector('[data-target="ApagarDocumentoForm"]').addEventListener('click', abrirApagarDocumento);
-document.querySelector('[data-target="ErrosRHForm"]').addEventListener('click', abrirErrosRH);
+//document.querySelector('[data-target="usuariosForm"]').addEventListener('click', abrirusuarios);
+//document.querySelector('[data-target="DocumentosApagadosForm"]').addEventListener('click', abrirDocumentosApagados);
+//document.querySelector('[data-target="ApagarDocumentoForm"]').addEventListener('click', abrirApagarDocumento);
+//document.querySelector('[data-target="ErrosRHForm"]').addEventListener('click', abrirErrosRH);
 document.querySelector('[data-target="ErrosDepartamentosForm"]').addEventListener('click', abrirErrosDepartamentos);
-document.querySelector('[data-target="OcupaçãoForm"]').addEventListener('click', abrirOcupação);
+//document.querySelector('[data-target="OcupaçãoForm"]').addEventListener('click', abrirOcupação);
 document.querySelector('[data-target="TiposDocumentosForm"]').addEventListener('click', abrirTiposDocumentos);
 document.querySelector('[data-target="GruposDocumentosForm"]').addEventListener('click', abrirGruposDocumentos);
 document.querySelector('[data-target="SetorForm"]').addEventListener('click', abrirSetor);
@@ -229,3 +232,34 @@ document.getElementById('formFuncionario').addEventListener('submit', function (
 });
 
 */
+$(document).ready(function(){
+        $("#pesquisa").on("keyup", function() {
+            var value = $(this).val().toLowerCase();
+            $("#tabelaFuncionario tbody tr").filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+    document.getElementById('pesquisa').addEventListener('keyup', function() {
+        var input, filter, table, tr, td, i, j, txtValue;
+        input = document.getElementById('pesquisa');
+        filter = input.value.toUpperCase();
+        table = document.querySelector('#tabelaEmpresaForm table');
+        tr = table.getElementsByTagName('tr');
+
+        // Loop through all table rows, and hide those who don't match the search query
+        for (i = 1; i < tr.length; i++) { // Start at 1 to skip header row
+            tr[i].style.display = 'none'; // Assume row should be hidden
+
+            td = tr[i].getElementsByTagName('td');
+            for (j = 0; j < td.length; j++) {
+                if (td[j]) {
+                    txtValue = td[j].textContent || td[j].innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = ''; // Show row
+                        break; // No need to check other cells in this row
+                    }
+                }
+            }
+        }
+    });

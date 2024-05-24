@@ -12,7 +12,82 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import sys
 from pathlib import Path
 import os
+import environ
+import os
 from loguru import logger
+
+
+
+
+# Definindo o caminho do .env
+env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+
+if not os.path.exists(env_file):
+    raise Exception(f"Arquivo .env não encontrado em {env_file}")
+
+env = environ.Env()
+environ.Env.read_env(env_file)
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
+    }
+}
+
+# settings.py
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = 'django-insecure-^8^4qsxil&gy)v98w0-9%7a^u3w$22zq^0t*6vb&(bs!0jb#)y'
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = True
+
+# ALLOWED_HOSTS = ['34.233.130.245', 'gedone-rihappy.imageone.com.br',  'www.gedone-rihappy.imageone.com.br', '127.0.0.1']
+
+# Application definition
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',  # Certifique-se de que esta linha está presente
+    'documento', 'rest_framework'
+]
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 100  # Defina o tamanho padrão da página
+}
+
+
+AUTH_USER_MODEL = 'documento.Usuario'
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'documento.middlewares.access_control_middleware.AcessoControleMiddleware',
+
+]
+
+
+
 
 LOGGING = {
     'version': 1,
@@ -41,51 +116,6 @@ LOGGING = {
     },
 }
 
-# Configure Loguru to use Django's logging configuration
-logger.configure(handlers=[{"sink": sys.stdout, "level": "DEBUG"}])
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^8^4qsxil&gy)v98w0-9%7a^u3w$22zq^0t*6vb&(bs!0jb#)y'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['*']
-
-
-
-
-# Application definition
-
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'documento',
-]
-
-# AUTH_USER_MODEL = 'documento.Usuario'
-
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
-]
-
 
 ROOT_URLCONF = 'gedone.urls'
 
@@ -111,32 +141,13 @@ LOGIN_URL = 'index/'  # Ou outra URL da sua escolha
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-'''DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}'''
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'ged_qpalzm&2024',
-        'HOST': 'gedone-riheppy.clqq6ecsy7pl.us-east-1.rds.amazonaws.com',
-        'PORT': '5432',  # Porta padrão do PostgreSQL
-    }
-}
-
 
 
 # REMOVER O COMENTÁRIO ANTES DE SUBIR O CODIGO PARA PRODUÇÃO
 """
 # Configurações de segurança
-DEBUG = False
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_SSL_REDIRECT = True
@@ -188,13 +199,15 @@ DATETIME_FORMAT = 'DD/MM/AAAA HH:mm:ss'
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 # Configuração de arquivos estáticos
-# settings.py
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 
 ]
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

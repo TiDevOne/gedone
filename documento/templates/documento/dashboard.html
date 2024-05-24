@@ -10,86 +10,17 @@
 
 
 {% block content %}
-<style>
-    .modal {
-  display: none;
-  position: fixed;
-  z-index: 1;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.4);
-}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
-.modal-content {
-  background-color: #fefefe;
-  margin: 15% auto;
-  padding: 20px;
-  border: 1px solid #888;
-  width: 80%;
-}
-
-.close {
-  color: #aaa;
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-}
-
-.close:hover,
-.close:focus {
-  color: black;
-  text-decoration: none;
-  cursor: pointer;
-  /* Estilo para linhas pares */
-}
-/* Estilo para linhas pares */
-tr:nth-child(even) {
-    background-color: #f2f2f2;
-}
-
-/* Estilo para linhas ímpares */
-tr:nth-child(odd) {
-    background-color: #ffffff;
-}
-
-/* Espaçamento entre as colunas */
-table {
-    border-collapse: separate;
-    border-spacing: 2px;
-    width: 100%; /* Largura total da tabela */
-}
-
-/* Centralizar conteúdo das células */
-td, th {
-    padding: 2px; /* Espaçamento interno das células */
-    text-align: center;
-}
-
-
-</style>
-
-
-
-
-<div id="myModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <div id="tabelaDetalhes"></div>
-    </div>
-  </div>
-  
     <div class="btn-group">
-        <button class="btn-ativo" onclick="exibirGraficosAtivos()">Ativos: <span id="total-ativos"></span></button>
-        <button class="btn-inativo" onclick="exibirGraficosInativos()">Inativos: <span id="total-inativos"></span></button>
+        <button class="btn-ativo" onclick="exibirGraficosAtivos()">Ativos <span id="total-ativos"></span></button>
+        <button class="btn-inativo" onclick="exibirGraficosInativos()">Inativos <span id="total-inativos"></span></button>
     </div>
 
 <div class="container-box">
     <div class="box1">
         <div class="box">
-            <h1>ASO Admissional</h1>
+            <h1 id="aso-title">ASO Admissional</h1>
         </div>
         <div class="box-interno1" >
             <p>Existente</p>
@@ -117,7 +48,7 @@ td, th {
 
     <div class="box1">
         <div class="box">
-            <h1>Cartões de Ponto</h1>
+            <h1>Cartão de ponto</h1>
         </div>
         <div class="box-interno1" >
             <p>Existente</p>
@@ -130,488 +61,393 @@ td, th {
     </div>
 
 </div>
+<!-- Overlay para desfoque de fundo -->
+<div id="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); z-index: 1000;"></div>
 
+<!-- Tabela de colaboradores -->
+<div id="tabela-colaboradores" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; z-index: 1001; width: 80%; max-height: 80%; overflow-y: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+    <div style="background: #4B87B9; color: white; padding: 10px; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+        <span style="font-size: 1.5em;">Detalhes</span>
+        
+        <button onclick="fecharTabelaColaboradores()" style="float: right; background: none; border: none; color: white; font-size: 1.2em;">X</button>
+    </div>
+    <!-- Aqui será inserido o conteúdo da tabela -->
+</div>
+<!-- Botão de voltar
+<div id="botao-voltar" style="display: none; position: absolute; top: 10px; right: 10px;">
+    <button onclick="voltarGraficoPrincipal()">
+        <i class="bi bi-arrow-left" id="icone-botao-voltar"></i> Voltar
+    </button>
+</div> -->
+<!-- Botão de voltar -->
+<div id="botao-voltar" style="display: none; margin-bottom: 10px;">
+    <button onclick="voltarGraficoPrincipal()" style="border: none;">
+        <i class="bi bi-arrow-left" id="icone-botao-voltar"></i> 
+    </button>
+</div>
 
-<div id="grafico-container" style="width: 100%; overflow-x: auto;">
-    <div id="graficos" style="display: flex; margin: 0; font-size: 0;">
-        <canvas id="grafico-unidades" width="400" height="100" style="margin-right: 0;"></canvas>
-        <canvas id="grafico-unidades-restantes" width="400" height="100" style="margin-left: 0;"></canvas>
+<div class="chart-container">
+   
+        <p id="chart-title-text">Total de Pendências e Percentual por Unidade</p>
+      
+           <!-- <div class="legend-item">
+                <span class="legend-color" style="background-color: #2c0b38;"></span>
+                <span>Total de Pendência / Quantidade</span>
+            </div>
+            -->
+            <div class="legend-item">
+                <span class="legend-color" style="background-color: #4682B4;"></span>
+                <span>Total de Pendência / Percentual</span>
+            </div>
+       
+   
+    <div class="chart-content">
+        <div id="grafico-unidades" style="height: 700px; width: 1000px;"></div>
     </div>
 </div>
 
 
 
-
 <script>
-    // Função para exibir gráficos de documentos pendentes por unidade
-    function exibirGraficosAtivos() {
+    let graficoPrincipal;  // Variável para armazenar o gráfico principal
+let dadosGraficoPrincipal;  // Variável para armazenar os dados do gráfico principal
+let layoutGraficoPrincipal;  // Variável para armazenar o layout do gráfico principal
+let tamanhoGrafico;  // Variável para armazenar o tamanho do gráfico
+const larguraBarra = 0.9; // Variável global para a largura da barra padrão
+const larguraBarraAtivos = 0.9; // Largura da barra para o gráfico de pendências de documentos ativos
+const deslocamento = 0.0; // Deslocamento para evitar sobreposição
 
-        $.ajax({
-            url: "{% url 'aso_percentual_ativo' %}",  // URL da view para percentuais ativos
-            type: 'GET',
-            success: function(data) {
-                // Assume que 'data' é um objeto JSON no formato {'Existente': '2%', 'Pendente': '98%'}
-                $('#valorexistente').text(data.Existente);
-                $('#valorpendente').text(data.Pendente);
-            },
-            error: function() {
-                console.log('Erro ao carregar os dados para ativos');
-            }
-        });
+// Função para buscar os dados da view e criar o gráfico
+function carregarDadosEConstruirGrafico(url) {
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            const unidades = data.map(item => item.unidade);
+            const percentuaisPendencias = data.map(item => item.percentual_pendencias.replace('%', ''));
 
-        $.ajax({
-            url: "{% url 'documentos_obrigatorios_ativos' %}",  // URL da view para percentuais ativos
-            type: 'GET',
-            success: function(data) {
-                // Assume que 'data' é um objeto JSON no formato {'Existente': '2%', 'Pendente': '98%'}
-                $('#valorexistenteObrigatorios').text(data.Existente);
-                $('#valorpendenteObrigatorios').text(data.Pendente);
-            },
-            error: function() {
-                console.log('Erro ao carregar os dados para ativos');
-            }
-        });
+            tamanhoGrafico = unidades.length * (larguraBarra + 0.3);
 
-        $.ajax({
-            url: "{% url 'documentos_ponto_ativos' %}",  // URL da view para percentuais ativos
-            type: 'GET',
-            success: function(data) {
-                // Assume que 'data' é um objeto JSON no formato {'Existente': '2%', 'Pendente': '98%'}
-                $('#valorexistentePonto').text(data.Existente);
-                $('#valorpendentePonto').text(data.Pendente);
-            },
-            error: function() {
-                console.log('Erro ao carregar os dados para ativos');
-            }
-        });
-    
-        // Seu código JavaScript com as configurações do Chart.js e do plugin Datalabels
-fetch("{% url 'obrigatorios_por_unidade' %}")
-    .then(response => response.json())
-    .then(data => {
-        unidadesData = data;
-        let unidades = unidadesData.map(item => item.unidade);
-        let totalPendentes = unidadesData.map(item => item.total_pendentes);
-        
-        let unidades10 = unidades.slice(0, 10);
-        let totalPendentes10 = totalPendentes.slice(0, 10);
-        
-        let unidadesRestantes = unidades.slice(10);
-        let totalPendentesRestantes = totalPendentes.slice(10);
-        
-        if (unidadesRestantes.length > 10) {
-            unidadesRestantes = unidadesRestantes.slice(0, 10);
-            totalPendentesRestantes = totalPendentesRestantes.slice(0, 10);
-        }
-
-        const totalMax10 = Math.max(...totalPendentes10);
-        const totalPendentesPorcentagem10 = totalPendentes10.map(value => (value / totalMax10) * 100);
-
-        const ctxUnidades = document.getElementById('grafico-unidades').getContext('2d');
-        graficoUnidades = new Chart(ctxUnidades, {
-            type: 'bar',
-            data: {
-                labels: unidades10,
-                datasets: [{
-                    label: 'Total Pendentes (%)',
-                    data: totalPendentesPorcentagem10,
-                    backgroundColor: '#4B87B9',
-                    borderColor: '#4B87B9',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return value + "%";
-                            }
-                        }
-                    }
-                },
-                plugins: {
-                    datalabels: {
-                        anchor: 'center', // Ancora os valores no centro das barras
-                        align: 'center', // Alinha os valores ao centro
-                        formatter: function(value, context) {
-                            return value.toFixed(2) + '%';
-                        }
-                    }
-                }
-            }
-        });
-
-        if (unidadesRestantes.length > 0) {
-            const ctxUnidadesRestantes = document.getElementById('grafico-unidades-restantes').getContext('2d');
-            const totalMaxRestantes = Math.max(...totalPendentesRestantes);
-            const totalPendentesPorcentagemRestantes = totalPendentesRestantes.map(value => (value / totalMaxRestantes) * 100);
-            
-            graficoUnidadesRestantes = new Chart(ctxUnidadesRestantes, {
+            const tracePercentuais = {
+                x: unidades.map((unidade, index) => index + deslocamento), // Adiciona deslocamento
+                y: percentuaisPendencias,
                 type: 'bar',
-                data: {
-                    labels: unidadesRestantes,
-                    datasets: [{
-                        label: 'Total Pendentes (%)',
-                        data: totalPendentesPorcentagemRestantes,
-                        backgroundColor: '#4B87B9',
-                        borderColor: '#4B87B9',
-                        borderWidth: 1
-                    }]
+                name: 'Percentual de Pendências',
+                marker: {
+                    color: '#4682B4'
                 },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                display: false // Oculta os valores do eixo Y
-                            }
-                        }
-                    },
-                    plugins: {
-                        datalabels: {
-                            anchor: 'center', // Ancora os valores no centro das barras
-                            align: 'center', // Alinha os valores ao centro
-                            formatter: function(value, context) {
-                                return value.toFixed(2) + '%';
-                            }
-                        }
-                    }
-                }
-            });
-        
+                text: percentuaisPendencias.map((value, index) => `${value}%`),
+                textposition: 'outside',
+                textfont: {
+                    color: '#000'
+                },
+                width: larguraBarra,
+                customdata: data,
+                hoverinfo: 'none'  // Remove os valores de quantidade no hover
+            };
 
-    // Adicionar evento de clique nas barras do segundo gráfico
-    ctxUnidadesRestantes.canvas.onclick = function(evt) {
-        const activePoint = graficoUnidadesRestantes.getElementsAtEventForMode(evt, 'nearest', { intersect: true });
-        if (activePoint.length) {
-            const index = activePoint[0].index;
-            const unidadeSelecionada = unidadesRestantes[index];
-            exibirGraficoDocumentos(unidadeSelecionada, unidadesData[index + 10].documentos, 'ativos');
-        }
-    };
+            const layout = {
+                title: `Percentual de Pendências por Unidade`,
+                xaxis: {
+                    title: 'Unidade',
+                    tickvals: unidades.map((unidade, index) => index),
+                    ticktext: unidades,
+                    showgrid: true,  // Exibir linhas do grid no eixo x
+                    zeroline: false,  // Exibir linha zero no eixo x
+                    showline: true,  // Exibir linha no eixo x
+                    mirror: 'ticks', // Espelhar as linhas de ticks nos dois lados do eixo
+                },
+                yaxis: {
+                    title: 'Percentual de Pendências',
+                    showgrid: true,  // Exibir linhas do grid no eixo y
+                    zeroline: true,  // Exibir linha zero no eixo y
+                    showline: true,  // Exibir linha no eixo y
+                    mirror: 'ticks', // Espelhar as linhas de ticks nos dois lados do eixo
+                    range: [0, 100] // Define o alcance do eixo y até 100%
+                },
+                width: tamanhoGrafico * 100,
+                margin: {
+                    l: 100,
+                    r: 100, // Ajuste a margem direita para acomodar o segundo eixo y
+                    b: 150,
+                    t: 80,
+                    pad: 10
+                },
+                bargap: 0.1,
+                clickmode: 'event+select',
+            };
+
+            dadosGraficoPrincipal = [tracePercentuais];
+            layoutGraficoPrincipal = layout;
+            graficoPrincipal = Plotly.newPlot('grafico-unidades', dadosGraficoPrincipal, layoutGraficoPrincipal);
+
+            document.getElementById('grafico-unidades').on('plotly_click', exibirGraficoDocumentosPendentes);
+        })
+        .catch(error => console.error('Erro ao carregar os dados:', error));
 }
 
-        // Adicionar evento de clique nas barras do gráfico de unidades
-        ctxUnidades.canvas.onclick = function(evt) {
-            const activePoint = graficoUnidades.getElementsAtEventForMode(evt, 'nearest', { intersect: true });
-            if (activePoint.length) {
-                const index = activePoint[0].index;
-                const unidadeSelecionada = unidades[index];
-                exibirGraficoDocumentos(unidadeSelecionada, unidadesData[index].documentos, 'ativos');
-            }
-        };
-    
-        // Atualizar o total de ativos
-        document.getElementById('total-ativos').textContent = totalAtivosInicial; // Usando o valor inicial
-    })
-    .catch(error => console.error('Erro ao carregar dados:', error));
-    }
+function exibirGraficoDocumentosPendentes(data) {
+    const indiceBarra = data.points[0].pointIndex;
+    const unidadeClicada = data.points[0].data.customdata[indiceBarra].unidade;  // Obtendo a unidade correta a partir de customdata
+    const dadosUnidade = data.points[0].data.customdata[indiceBarra];
 
-    // Função para exibir gráfico de documentos pendentes por tipo para uma unidade específica
-    function exibirGraficoDocumentos(unidade, documentos, estado) {
-        documentosData = documentos; // Armazenar os dados dos documentos pendentes
+    const documentosPendentes = dadosUnidade.documentos.map(doc => ({
+        tipo_documento: doc.tipo_documento,
+        quantidade: doc.quantidade,
+        colaboradores: doc.colaboradores
+    }));
 
-        const tiposDocumento = documentosData.map(doc => doc.tipo_documento);
-        const quantidades = documentosData.map(doc => doc.quantidade);
+    const traceDocumentos = {
+        x: documentosPendentes.map(doc => doc.tipo_documento),
+        y: documentosPendentes.map(doc => doc.quantidade),
+        type: 'bar',
+        marker: {
+            color: '#4682B4',
+        },
+        text: documentosPendentes.map(doc => doc.quantidade),
+        textposition: 'outside',
+        textfont: {
+            color: '#000',
+        },
+        width: larguraBarraAtivos,
+        hoverinfo: 'none'  // Remove os valores de quantidade no hover
+    };
 
-        // Remover gráfico de unidades
-        graficoUnidades.destroy();
+    const layoutDocumentos = {
+        title: `Total de Pendências por Documento: ${unidadeClicada}`, // Adicionando o nome da unidade ao título
+        xaxis: {
+            title: 'Tipo de Documento',
+            showgrid: true,  // Exibir linhas do grid no eixo x
+            zeroline: false,  // Exibir linha zero no eixo x
+            showline: true,  // Exibir linha no eixo x
+            mirror: 'ticks', // Espelhar as linhas de ticks nos dois lados do eixo
+        },
+        yaxis: {
+            title: 'Quantidade de Pendências',
+            showgrid: true,  // Exibir linhas do grid no eixo y
+            zeroline: true,  // Exibir linha zero no eixo y
+            showline: true,  // Exibir linha no eixo y
+            mirror: 'ticks', // Espelhar as linhas de ticks nos dois lados do eixo
+            range: [0, 100] // Define o alcance do eixo y até 100%
+        },
+        width: tamanhoGrafico * 20,
+        margin: {
+            l: 100,
+            r: 20,
+            b: 150,
+            t: 80,
+            pad: 10
+        },
+        bargap: 0.1,
+    };
 
-        // Definir o título do gráfico com o nome da unidade e o estado dos dados
-        let titulo = `${unidade} - Pendentes`;
-        if (estado === 'ativos') {
-            titulo += ' - Ativos';
-        } else if (estado === 'inativos') {
-            titulo += ' - Inativos';
-        }
+    Plotly.newPlot('grafico-unidades', [traceDocumentos], layoutDocumentos);
+    document.getElementById('botao-voltar').style.display = 'block';  // Exibir o botão de voltar
 
-        // Criar gráfico de barras de documentos pendentes por tipo
-        const ctxDocumentos = document.getElementById('grafico-unidades').getContext('2d');
-        const graficoDocumentos = new Chart(ctxDocumentos, {
-            type: 'bar',
-            data: {
-                labels: tiposDocumento,
-                datasets: [{
-                    label: 'Quantidade Pendente',
-                    data: quantidades,
-                    backgroundColor: '#4B87B9',
-                    borderColor: '#4B87B9',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return value; // Mantendo apenas o valor sem a unidade de porcentagem
-                            }
-                        }
-                    }
-                },
-                plugins: {
-                    datalabels: {
-                        color: '#000000',
-                        anchor: 'end',
-                        align: 'end',
-                        offset: 10, // Ajuste conforme necessário para mover os rótulos para cima
-                        formatter: function(value, context) {
-                            return value + '%'; // Adiciona porcentagem aos valores das barras
-                        }
-                    }
-                },
-                title: {
-                    display: true,
-                    text: titulo // Definir o título do gráfico
-                }
-            }
-        });
-    }
+    // Exibir detalhes de colaboradores ao clicar no gráfico de tipo de documento
+    document.getElementById('grafico-unidades').on('plotly_click', function(dataDoc) {
+        if (dataDoc.points[0].data.type === 'bar') {
+            const idxDoc = dataDoc.points[0].pointIndex;
+            const docClicado = documentosPendentes[idxDoc];
 
-
-        // Adicionar evento de clique nas barras do gráfico de documentos
-        ctxDocumentos.canvas.onclick = function(evt) {
-            const activePoint = graficoDocumentos.getElementsAtEventForMode(evt, 'nearest', { intersect: true });
-            if (activePoint.length) {
-                const index = activePoint[0].index;
-                exibirDetalhesDocumento(index);
-            }
-        };
-
-        // Adicionar botão de voltar
-        const backButton = document.createElement('button');
-        backButton.textContent = 'Voltar';
-        backButton.onclick = function() {
-            // Destruir o gráfico de documentos pendentes por tipo
-            graficoDocumentos.destroy();
-            // Recriar o gráfico de unidades utilizando os dados armazenados
-            exibirGraficosAtivos();
-            // Remover o botão de voltar
-            backButton.remove();
-        };
-        document.getElementById('grafico-container').appendChild(backButton);
-    }
-
-    // Função para exibir tabela de detalhes ao clicar em uma barra do gráfico de documentos
-    function exibirDetalhesDocumento(index) {
-    const documentoSelecionado = documentosData[index];
-    console.log("documentoSelecionado:", documentoSelecionado); // Verifique o conteúdo de documentoSelecionado
-
-    // Verifique se as chaves regional e unidade existem em documentoSelecionado
-    console.log("regional:", documentoSelecionado.regional);
-    console.log("unidade:", documentoSelecionado.unidade);
-
-    const tabelaDetalhesHTML = `
-       <table>
-        <thead>
-            <!-- Linha de cabeçalho personalizado com o título da unidade filtrada -->
-            <tr style="background-color: #723588; color: #ffffff;">
-                <th colspan="9">${documentoSelecionado.unidade} - Detalhes</th>
-            </tr>
-            <!-- Cabeçalho padrão da tabela -->
-            <tr>
-                <th>Regional</th>
-                <th>Unidade</th>
-                <th>Cargo</th>
-                <th>Nome</th>
-                <th>Matrícula</th>
-                <th>CPF</th>
-                <th>Documento</th>
-                <th>Admissão</th>
-                <th>Ver Dossiê</th> <!-- Coluna adicional -->
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Linhas da tabela -->
-            ${documentoSelecionado.colaboradores.map(colaborador => `
+            // Criar e exibir a tabela de colaboradores com documentos pendentes
+            const tabelaColaboradores = document.getElementById('tabela-colaboradores');
+            tabelaColaboradores.innerHTML = `<div style="background: #4682B4; color: white; padding: 10px; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+                <span style="font-size: 1.5em;">Detalhes: ${unidadeClicada}</span>
+                <button onclick="fecharTabelaColaboradores()" style="float: right; background: none; border: none; color: white; font-size: 1.2em;">X</button>
+            </div>`;
+            
+            let tabelaHTML = `<table border="1" style="width: 100%; text-align: left; margin-top: 20px;">
                 <tr>
-                    <td>${documentoSelecionado.regional}</td>
-                    <td>${documentoSelecionado.unidade}</td>
-                    <td>${colaborador.cargo}</td>
-                    <td>${colaborador.nome}</td>
-                    <td>${colaborador.matricula}</td>
-                    <td>${colaborador.cpf}</td>
-                    <td>${documentoSelecionado.tipo_documento}</td>
-                    <td>${colaborador.admissao}</td>
-                    <td><i class="bi bi-search" onclick="redirecionarParaDadosPessoais('${documentoSelecionado.regional}', '${documentoSelecionado.unidade}', '${colaborador.cargo}', '${colaborador.nome}', '${colaborador.matricula}', '${colaborador.cpf}', '${documentoSelecionado.tipo_documento}', '${colaborador.admissao}')"></i></td> <!-- Ícone para ver dossiê -->
-                </tr>
-            `).join('')}
-        </tbody>
-    </table>
-    `;
+                    <th>Regional</th>
+                    <th>Unidade</th>
+                    <th>Cargo</th>
+                    <th>Nome</th>
+                    <th>Matrícula</th>
+                    <th>CPF</th>
+                    <th>Nome do Documento Pendente</th>
+                    <th>Admissão</th>
+                    <th>Ver Dossiê</th> <!-- Nova coluna -->
+                </tr>`;
 
-    console.log("tabelaDetalhesHTML:", tabelaDetalhesHTML); // Verifique o HTML gerado
+            docClicado.colaboradores.forEach(colab => {
+                tabelaHTML += `<tr>
+                    <td>${colab.regional}</td>
+                    <td>${colab.unidade}</td>
+                    <td>${colab.cargo}</td>
+                    <td>${colab.nome}</td>
+                    <td>${colab.matricula}</td>
+                    <td>${colab.cpf}</td>
+                    <td>${docClicado.tipo_documento}</td>
+                    <td>${colab.admissao}</td>
+                    <td><i class="bi bi-search" style="cursor: pointer;" onclick="redirecionarParaDossie('${colab.regional}', '${colab.unidade}', '${colab.cargo}', '${colab.nome}', '${colab.matricula}', '${colab.cpf}', '${docClicado.tipo_documento}', '${colab.admissao}')"></i></td> <!-- Ícone de ver dossiê -->
+                </tr>`;
+            });
+            tabelaHTML += `</table>`;
 
-    // Adicionando função para redirecionar ao clicar no ícone de busca
-    window.redirecionarParaDadosPessoais = function (regional, unidade, cargo, nome, matricula, cpf, tipoDocumento, admissao) {
-        const url = `{% url 'dados_pessoais' %}?regional=${encodeURIComponent(regional)}&unidade=${encodeURIComponent(unidade)}&cargo=${encodeURIComponent(cargo)}&colaborador=${encodeURIComponent(nome)}&matricula=${encodeURIComponent(matricula)}&cpf=${encodeURIComponent(cpf)}&tipoDocumento=${encodeURIComponent(tipoDocumento)}&admissao=${encodeURIComponent(admissao)}`;
-        window.location.href = url;
-    };
-
-
-
-
-        // Criar o modal
-        const modal = document.createElement('div');
-        modal.classList.add('modal');
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <div id="tabelaDetalhes">${tabelaDetalhesHTML}</div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        // Exibir o modal
-        modal.style.display = 'block';
-
-        // Fechar o modal ao clicar no botão de fechar (×) ou fora da janela modal
-        const closeButton = modal.querySelector('.close');
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal.remove();
-            }
+            tabelaColaboradores.innerHTML += tabelaHTML;
+            tabelaColaboradores.style.display = 'block';  // Mostrar a tabela
+            document.getElementById('overlay').style.display = 'block';  // Mostrar o overlay
         }
-        closeButton.onclick = function() {
-            modal.remove();
+    });
+}
+
+// Função para redirecionar para a página do dossiê
+function redirecionarParaDossie(regional, unidade, cargo, nome, matricula, cpf, tipoDocumento, admissao) {
+    const situacao = "Ativo"; // Defina a situação conforme necessário
+    const parametrosURL = `situacao=${situacao}&matricula=${matricula}&cpf=${cpf}&colaborador=${nome}&admissao=${admissao}&regional=${regional}&unidade=${unidade}&cargo=${cargo}`;
+    const urlDossie = `{% url 'dados_pessoais' %}?${parametrosURL}`;
+    window.location.href = urlDossie;
+}
+
+function exibirGraficosAtivos() {
+    document.getElementById('aso-title').innerText = 'ASO Periódico';
+    
+    $.ajax({
+        url: "{% url 'aso_percentual_ativo' %}",  // URL da view para percentuais ativos
+        type: 'GET',
+        success: function(data) {
+            // Assume que 'data' é um objeto JSON no formato {'Existente': '2%', 'Pendente': '98%'}
+            $('#valorexistente').text(data.Existente);
+            $('#valorpendente').text(data.Pendente);
+        },
+        error: function() {
+            console.log('Erro ao carregar os dados para ativos');
         }
-    }
+    });
 
-    // Função para buscar os dados da view TotalColaboradoresView e exibir os gráficos quando a página carregar
-    window.onload = function() {
-        getTotalColaboradores();
-        exibirGraficosAtivos();
-    };
-
-    // Função para buscar os dados da view TotalColaboradoresView
-    async function getTotalColaboradores() {
-        try {
-            const response = await fetch("{% url 'total_colaboradores' %}");
-            const data = await response.json();
-
-            // Atualizar o texto dos botões com as quantidades de ativos e inativos
-            document.getElementById('total-ativos').textContent = data.total_ativos;
-            document.getElementById('total-inativos').textContent = data.total_inativos;
-        } catch (error) {
-            console.error('Erro ao buscar os dados dos colaboradores:', error);
+    $.ajax({
+        url: "{% url 'documentos_obrigatorios_ativos' %}",  // URL da view para percentuais ativos
+        type: 'GET',
+        success: function(data) {
+            // Assume que 'data' é um objeto JSON no formato {'Existente': '2%', 'Pendente': '98%'}
+            $('#valorexistenteObrigatorios').text(data.Existente);
+            $('#valorpendenteObrigatorios').text(data.Pendente);
+        },
+        error: function() {
+            console.log('Erro ao carregar os dados para ativos');
         }
-    }
+    });
 
-    // Função para exibir gráficos de documentos pendentes por unidade para os inativos
-    function exibirGraficosInativos() {
-        $.ajax({
-            url: "{% url 'aso_percentual_inativo' %}",  // URL da view para percentuais inativos
-            type: 'GET',
-            success: function(data) {
-                // Assume que 'data' é um objeto JSON no formato {'Existente': '2%', 'Pendente': '98%'}
-                $('#valorexistente').text(data.Existente);
-                $('#valorpendente').text(data.Pendente);
-            },
-            error: function() {
-                console.log('Erro ao carregar os dados para inativos');
-            }
-        });
+    $.ajax({
+        url: "{% url 'documentos_ponto_ativos' %}",  // URL da view para percentuais ativos
+        type: 'GET',
+        success: function(data) {
+            // Assume que 'data' é um objeto JSON no formato {'Existente': '2%', 'Pendente': '98%'}
+            $('#valorexistentePonto').text(data.Existente);
+            $('#valorpendentePonto').text(data.Pendente);
+        },
+        error: function() {
+            console.log('Erro ao carregar os dados para ativos');
+        }
+    });
+    carregarDadosEConstruirGrafico("{% url 'obrigatorios_por_unidade' %}");
+}
 
-
-        $.ajax({
-            url: "{% url 'documentos_obrigatorios_inativos' %}",  // URL da view para percentuais inativos
-            type: 'GET',
-            success: function(data) {
-                // Assume que 'data' é um objeto JSON no formato {'Existente': '2%', 'Pendente': '98%'}
-                $('#valorexistenteObrigatorios').text(data.Existente);
-                $('#valorpendenteObrigatorios').text(data.Pendente);
-            },
-            error: function() {
-                console.log('Erro ao carregar os dados para inativos');
-            }
-        });
-
-        $.ajax({
-            url: "{% url 'documentos_ponto_inativos' %}",  // URL da view para percentuais ativos
-            type: 'GET',
-            success: function(data) {
-                // Assume que 'data' é um objeto JSON no formato {'Existente': '2%', 'Pendente': '98%'}
-                $('#valorexistentePonto').text(data.Existente);
-                $('#valorpendentePonto').text(data.Pendente);
-            },
-            error: function() {
-                console.log('Erro ao carregar os dados para ativos');
-            }
-        });
+function exibirGraficosInativos() {
+    document.getElementById('aso-title').innerText = 'ASO Periódico';
+    $.ajax({
+        url: "{% url 'aso_percentual_inativo' %}",  // URL da view para percentuais inativos
+        type: 'GET',
+        success: function(data) {
+            // Assume que 'data' é um objeto JSON no formato {'Existente': '2%', 'Pendente': '98%'}
+            $('#valorexistente').text(data.Existente);
+            $('#valorpendente').text(data.Pendente);
+        },
+        error: function() {
+            console.log('Erro ao carregar os dados para inativos');
+        }
+    });
 
 
-        fetch("{% url 'obrigatorios_inativos_unid' %}")
-            .then(response => response.json())
-            .then(data => {
-                unidadesData = data;
-                const unidades = unidadesData.map(item => item.unidade);
-                const totalPendentes = unidadesData.map(item => item.total_pendentes);
+    $.ajax({
+        url: "{% url 'documentos_obrigatorios_inativos' %}",  // URL da view para percentuais inativos
+        type: 'GET',
+        success: function(data) {
+            // Assume que 'data' é um objeto JSON no formato {'Existente': '2%', 'Pendente': '98%'}
+            $('#valorexistenteObrigatorios').text(data.Existente);
+            $('#valorpendenteObrigatorios').text(data.Pendente);
+        },
+        error: function() {
+            console.log('Erro ao carregar os dados para inativos');
+        }
+    });
 
-                const totalMax = Math.max(...totalPendentes);
-                const totalPendentesPorcentagem = totalPendentes.map(value => (value / totalMax) * 100);
+    $.ajax({
+        url: "{% url 'documentos_ponto_inativos' %}",  // URL da view para percentuais ativos
+        type: 'GET',
+        success: function(data) {
+            // Assume que 'data' é um objeto JSON no formato {'Existente': '2%', 'Pendente': '98%'}
+            $('#valorexistentePonto').text(data.Existente);
+            $('#valorpendentePonto').text(data.Pendente);
+        },
+        error: function() {
+            console.log('Erro ao carregar os dados para ativos');
+        }
+    });
+    // Chama a função para carregar os dados, mas não constrói o gráfico ainda
+    carregarDadosEConstruirGrafico("{% url 'obrigatorios_inativos_unid' %}");
 
-                const ctxUnidades = document.getElementById('grafico-unidades').getContext('2d');
+    // Adiciona um ouvinte de evento ao botão para construir o gráfico quando clicado
+    document.getElementById('total-inativos').addEventListener('click', function() {
+        // Verifica se os dados foram carregados
+        if (dadosGraficoPrincipal && layoutGraficoPrincipal) {
+            // Constrói o gráfico apenas se os dados estiverem disponíveis
+            graficoPrincipal = Plotly.newPlot('grafico-unidades', dadosGraficoPrincipal, layoutGraficoPrincipal);
+        } else {
+            console.error('Os dados do gráfico não foram carregados ainda.');
+        }
+    });
+}
 
-                // Destruir o gráfico anterior, se existir
-                if (typeof graficoUnidades !== 'undefined') {
-                    graficoUnidades.destroy();
-                }
+function voltarGraficoPrincipal() {
+    Plotly.newPlot('grafico-unidades', dadosGraficoPrincipal, layoutGraficoPrincipal).then(() => {
+        document.getElementById('botao-voltar').style.display = 'none';
+        document.getElementById('tabela-colaboradores').style.display = 'none';
+        document.getElementById('overlay').style.display = 'none';
 
-                graficoUnidades = new Chart(ctxUnidades, {
-                    type: 'bar',
-                    data: {
-                        labels: unidades,
-                        datasets: [{
-                            label: 'Total Pendentes (%)',
-                            data: totalPendentesPorcentagem,
-                            backgroundColor: '#4B87B9', // Cor para inativos
-                            borderColor: '#4B87B9',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return value + "%";
-                                    }
-                                }
-                            }
-                        },
-                        plugins: {
-                            datalabels: {
-                                anchor: 'end',
-                                align: 'top',
-                                formatter: function(value, context) {
-                                    return value.toFixed(2) + '%';
-                                }
-                            }
-                        }
-                    }
-                });
+        // Reconfigurar o evento de clique no gráfico principal
+        document.getElementById('grafico-unidades').on('plotly_click', exibirGraficoDocumentosPendentes);
+    });
+}
 
-                ctxUnidades.canvas.onclick = function(evt) {
-                    const activePoint = graficoUnidades.getElementsAtEventForMode(evt, 'nearest', { intersect: true });
-                    if (activePoint.length) {
-                        const index = activePoint[0].index;
-                        const unidadeSelecionada = unidades[index];
-                        exibirGraficoDocumentos(unidadeSelecionada, unidadesData[index].documentos);
-                    }
-                };
+// Função para fechar a tabela de colaboradores
+function fecharTabelaColaboradores() {
+    const tabelaColaboradores = document.getElementById('tabela-colaboradores');
+    tabelaColaboradores.style.display = 'none';
+    tabelaColaboradores.innerHTML = '';  // Limpar o conteúdo da tabela
+    document.getElementById('overlay').style.display = 'none';
+}
 
-                document.getElementById('total-ativos').textContent = totalAtivosInicial;
-            })
-            .catch(error => console.error('Erro ao carregar dados:', error));
-    }
+window.onload = function() {
+    exibirGraficosAtivos();
+    buscarValoresAtivosEInativos();
+};
+
+</script>
+    
+
+
+
+
+
+
+
+
+<script>
+// Função para buscar os valores de ativos e inativos na view
+function buscarValoresAtivosEInativos() {
+    fetch("{% url 'total_colaboradores' %}")
+        .then(response => response.json())
+        .then(data => {
+            const totalAtivos = data.total_ativos;
+            const totalInativos = data.total_inativos;
+
+            // Exibir os valores dentro dos botões correspondentes
+            document.getElementById('total-ativos').innerText = totalAtivos;
+            document.getElementById('total-inativos').innerText = totalInativos;
+        })
+        .catch(error => console.error('Erro ao buscar os valores de ativos e inativos:', error));
+}
 
 
 </script>
@@ -619,13 +455,6 @@ fetch("{% url 'obrigatorios_por_unidade' %}")
 
 
 
-
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js" integrity="sha512-JPcRR8yFa8mmCsfrw4TNte1ZvF1e3+1SdGMslZvmrzDYxS69J7J49vkFL8u6u8PlPJK+H3voElBtUCzaXj+6ig==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
     <script src='{% static "bootstrap/js/src/dashboard.js" %}'></script>
 

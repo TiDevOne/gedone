@@ -2,23 +2,25 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth.views import PasswordResetDoneView
+
+from .views import CarregarColaboradorSimplesView, CarregarRelatorioExistenteSimplesView, CarregarRelatorioPendenteASOSimplesView, CarregarRelatorioPendenteSimplesView, ListarCartaoPontoInexistenteSimplesView, ListarDocumentosSimplesView, ListarDocumentosVencerSimplesView, dashboard, get_tipo_documentos, index,  dossie, relatorios, configuracao
 from .views import (LoginView, visualizar_documentos, TotalColaboradoresView, get_documentos_info,
                     AtualizarDocumentosPendentesView, DocumentosExistentesAtivosView,
                     ObrigatoriosPorUnidadeAtivo, ObrigatoriosPorUnidadeInativo, AtualizarASOView,
                     ASOPercentualAtivoView, AtualizarCartaoPontoView, DocumentosPontoAtivoView,
-                    DocumentosPontoInativoView, domingos_feriados_existente,
+                    DocumentosPontoInativoView, DomingosFeriadosExistenteView,
                     CarregarRelatorioPendenteView, CarregarRelatorioExistenteView, CarregarRelatorioPendenteASOView,
                     ListarCartaoPontoInexistenteView, CarregarDocumentosVencidosView, ObrigatoriosUnidadesInativoView,
                     ASOPercentualInativoView, DocumentosObrigatoriosAtivosView, DocumentosObrigatoriosInativosView,
-                    ObrigatoriosUnidadesAtivoView, ListarDocumentosVencidosView, ListarDocumentosaVencerView,
+                    ObrigatoriosUnidadesAtivoView, ListarDocumentosVencidosView, ListarDocumentosaVencerView, GerarRelatorioGerencialView,
                     get_hyperlinkpdf_data, DocumentosPendentesAtivosPorUnidadeView,
                     DocumentosPendentesInativosPorUnidadeView, DocumentoExistenteListView, buscar_pendencias)
 from .views import (
-    dashboard, index, importar_usuarios, gerenciar_colaborador, gerenciar_empresa, gerenciar_regional, gerenciar_unidade, gerenciar_usuario,
+    importar_usuarios,  CadastrarFuncionarioView, gerenciar_empresa, gerenciar_regional, gerenciar_unidade, GerenciarUsuarioView,
     CarregarDadosView, PesquisaDossieView, ListarResultadoDossieView, CarregarEmpresaView, CarregarCargoView,
     CarregarRegionalView, CarregarUnidadesView, CarregarSituacoesView, CarregarColaboradorView, dados_pessoais,
-    cadastrar_area, cadastrar_grupo_documento, dossie, inserir_tipodocumento_cargo,
-    relatorios, configuracao, tela_login, inserir_tipodocumento_colaborador, RelatorioPendenteView,
+    cadastrar_area, cadastrar_grupo_documento, inserir_tipodocumento_cargo, CarregarRelatoriosGerenciaisView,
+    inserir_tipodocumento_colaborador, RelatorioPendenteView,
     DocumentosExistentesView, DocumentoVencidoListView, DocumentoAVencerListView,
     PendenteASOListView, RelatorioGerencialListView, criar_funcionario,
     lista_funcionarios, cadastrar_tipodocumento, AuthenticationViews, ImportarDadosView, CustomLogoutView)
@@ -28,9 +30,9 @@ from .views import (
 urlpatterns = [
     # Urls tela inicial e Login
     path('index/', index, name='index'),
-    path('login_login/', LoginView.as_view(), name='login'),
+    path('login/', LoginView.as_view(), name='login'),
     path('logout/', CustomLogoutView.as_view(), name='logout'),
-    # path('logar/', CustomLogoutView.as_view(), name='logar'),
+
     path('forgot_password/', AuthenticationViews.as_view, name='forgot_password'),
     path('password_reset_done/', PasswordResetDoneView.as_view(), name='password_reset_done'),
     path('documento/importar_dados/', ImportarDadosView.as_view(), name='importar-dados'),
@@ -48,7 +50,7 @@ urlpatterns = [
     path('dados-pessoais/', dados_pessoais, name='dados_pessoais'),
     path('api/carregar_dados/', CarregarDadosView.as_view(), name='carregar_dados'),
     path('visualizar_documentos/', visualizar_documentos, name='visualizar_documentos'),
-    path('atualizar-documentos-pendentes/', AtualizarDocumentosPendentesView.as_view(), name='atualizar_documentos_pendentes'),
+    # path('atualizar-documentos-pendentes/', AtualizarDocumentosPendentesView.as_view(), name='atualizar_documentos_pendentes'),
     path('hyperlinkpdf/', get_hyperlinkpdf_data, name='hyperlinkpdf'),
     path('get_documentos_info/', get_documentos_info, name='get_documentos_info'),
 
@@ -82,6 +84,8 @@ urlpatterns = [
     path('documentos_vencidos/', CarregarDocumentosVencidosView.as_view(), name='documentos_vencidos'),
     path('lista_documentos_vencidos/', ListarDocumentosVencidosView.as_view(), name='lista_vencidos'),
     path('lista_a_vence/', ListarDocumentosaVencerView.as_view(), name='lista_a_vencer'),
+
+    path('relatorio_gerencia/', CarregarRelatoriosGerenciaisView.as_view(), name='relatorio_gerencias'),
     # path('documentos_auditoria/', CarregarDocumentosAuditoriaView.as_view(), name='documentos_auditorias'),
     path('documentos_existentes/', DocumentosExistentesView.as_view(), name='documentos_existentes'),
     path('atualizar-documentos-pendentes/', AtualizarDocumentosPendentesView.as_view(), name='atualizar_documentos_pendentes'),
@@ -109,7 +113,7 @@ urlpatterns = [
     path('total_colaboradores/', TotalColaboradoresView.as_view(), name='total_colaboradores'),
     path('obrigatorios-inativos-unidade/', ObrigatoriosPorUnidadeInativo.as_view(), name='obrigatorios_inativos_unid'),
 
-    path('pesquisa-documentos/', domingos_feriados_existente, name='domingos_feriados'),
+    path('pesquisa-documentos/', DomingosFeriadosExistenteView.as_view(), name='domingos_feriados'),
 
     path('pendencias/', buscar_pendencias, name='buscar_pendencias'),
 
@@ -125,22 +129,45 @@ urlpatterns = [
     path('cadastrar_tipodocumento/', cadastrar_tipodocumento, name='cadastrar_tipodocumento'),
     path('inserir_tipodocumento_cargo/', inserir_tipodocumento_cargo, name='inserir_tipodocumento_cargo'),
     path('inserir_tipodocumento_colaborador/', inserir_tipodocumento_colaborador, name='inserir_tipodocumento_colaborador'),
-    path('cadastro_colaborador/', gerenciar_colaborador, name='cadastrar_colaboradores'),
+
+    path('cadastrar_funcionario/', CadastrarFuncionarioView.as_view(), name='cadastrar_funcionario'),
+    # path('cadastro_colaborador/', gerenciar_colaborador, name='cadastrar_colaboradores'),
+
     path('cadastro_empresa/', gerenciar_empresa, name='cadastrar_empresas'),
     path('cadastro_regional/', gerenciar_regional, name='cadastrar_regionais'),
-    path('cadastro_uniade/', gerenciar_unidade, name='cadsatrar_unidades'),
-    path('cadastro_usuario/', gerenciar_usuario, name='cadastro_usuarios'),
-
+    path('cadastro_uniade/', gerenciar_unidade, name='cadastrar_unidades'),
+    path('cadastro_usuario/', GerenciarUsuarioView.as_view(), name='cadastro_usuarios'),
+     path('get_tipo_documentos/', get_tipo_documentos, name='get_tipo_documentos'),
     path('dossie/', dossie, name='dossie'),
     path('relatorios/', relatorios, name='relatorios'),
     path('configuracao/', configuracao, name='configuracao'),
     path('dashboard/', dashboard, name='dashboard'),
-    path('login/', tela_login, name='tela_login'),
+    #  path('login_tela/', tela_login, name='tela_login'),
+    
+    
+    #URLs de Relatorios com estrategias 
+    path('relatorio-pendente-simples/', CarregarRelatorioPendenteSimplesView.as_view(), name='relatorio_pendente_simples'),
+     path('carregar-relatorio-existente-simples/', CarregarRelatorioExistenteSimplesView.as_view(), name='carregar_relatorio_existente_simples'),
+     path('relatorio_aso_simples/', CarregarRelatorioPendenteASOSimplesView.as_view(), name='relatorio_aso_simples'),
+     path('relatorio_cartao_simples/', ListarCartaoPontoInexistenteSimplesView.as_view(), name='relatorio_cartao_simples'),
+     path('relatorio_vencidos_simples/', ListarDocumentosSimplesView.as_view(), name='relatorio_vencidos_simples'),
+     path('relatorio_vencer_simples/', ListarDocumentosVencerSimplesView.as_view(), name='relatorio_vencer_simples'),
+     path('relatorio_colaborador_simples/', CarregarColaboradorSimplesView.as_view(), name='relatorio_colaborador_simples'),
 
 ]
 
+
+
+    
+
+
+
+
+
 # No final do seu arquivo urls.py
 if settings.DEBUG:
+    from django.conf.urls.static import static
+    from django.conf import settings
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

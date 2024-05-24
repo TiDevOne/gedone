@@ -8,11 +8,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="{% static 'bootstrap/css/tela_login.css' %}"> <!-- Adicione o caminho correto para o arquivo CSS do Bootstrap -->
   <link rel="stylesheet" href="{% static 'bootstrap/images/AEGEA/logo/logo-branco.png' %}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css" rel="stylesheet">
+
   <!--script src="https://www.google.com/recaptcha/api.js" async defer></script-->
   <script src='{% static "bootstrap/js/src/tela_login.js" %}'></script>
   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  {% csrf_token %}
 </head>
 <body>
+     <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          document.getElementById('togglePassword').addEventListener('click', function (e) {
+              // Toggle the type attribute
+              const password = document.getElementById('password');
+              const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+              password.setAttribute('type', type);
+  
+              // Toggle the eye icon
+              this.classList.toggle('bi-eye');
+              this.classList.toggle('bi-eye-slash-fill');
+          });
+      });
+  </script>
   <!-- Estrutura da caixa de login -->
   <div class="login-box">
     <!-- Logotipo na caixa de login -->
@@ -21,15 +38,20 @@
     <h2>Login</h2>
     <!-- Formulário de login -->
     <form method="post" action="{% url 'login' %}">
+
+
   <!-- Campo de entrada para o nome de usuário -->
+      {% csrf_token %}
+
   <div class="user-box">
     <input type="text" name="username" required>
     <label>Usuário:</label>
   </div>
   <!-- Campo de entrada para a senha -->
   <div class="user-box">
-    <input type="password" name="password" required>
+    <input type="password" name="password" id="password" required>
     <label>Senha:</label>
+    <i class="bi bi-eye-slash-fill toggle-password" id="togglePassword" style="cursor: pointer;"></i>
   </div>
   <!-- Botão de acesso -->
   <a href="#">
@@ -37,10 +59,10 @@
     <span></span>
     <span></span>
     <span></span>
-  <button type="submit">Acessar</button>
+    <button type="submit" class="btn-acessar">Acessar</button>
   </a>
   <!-- Frase "Esqueci minha senha" com link -->
-  <p href="#" id="forgot-password">Esqueci minha senha</p>
+  <!--<p href="#" id="forgot-password">Esqueci minha senha</p>-->
   <div class="g-recaptcha" data-sitekey="SEU_SITE_KEY"></div>
 </form>
 
@@ -55,18 +77,13 @@
         <button id="submit">Enviar</button>
       </div>
     </div>
-    <!--
-    <div class="Termo">
-    Ao entrar no Ged One, você concorda com os nossos <br>Termos e
-     <b>Política de Privacidade.</b><br>
-    Este site é protegido pela reCAPTCHA Enterprise. Aplicam-se a 
-    <a href="https://policies.google.com/privacy">Política de Privacidade</a> <br>
-     e os <a href="https://policies.google.com/terms">Termos de Uso</a>
-     </div>
-    -->
 
 
 
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+ 
+
+
+{% csrf_token %}
 </body>
 </html>

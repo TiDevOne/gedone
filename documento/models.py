@@ -5,18 +5,7 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from .validators import CustomPasswordValidator
-
-LISTA_ATIVOS = (
-    ("ATIVO", "Ativo"),
-    ("INATIVO", "Inativo"),
-    ("AFASTADO", "Afastado"),
-)
-
-PCD = (
-    ("SIM", "sim"),
-    ("NÂO", "não"),
-    ("NAO", "nao")
-)
+from django.contrib.auth import get_user_model
 
 
 # **************** BASE GERAL DO SISTEMA **********************
@@ -197,8 +186,8 @@ class GrupoDocumento(models.Model):
 
     # tipo_documento = models.ForeignKey('TipoDocumento', on_delete=models.CASCADE, default=TipoDocumento.get_default_tipodocumento_id)
     class Meta:
-        db_table = 'grupodocumento'  # Especifica o nome da tabela no banco de dados
-        # Você pode adicionar outras opções da classe Meta conforme necessário
+        db_table = 'grupodocumento'
+
 
     def str(self):
         return self.nome  # Parece que aqui deveria ser self.nome
@@ -230,6 +219,7 @@ class TipoDocumento(models.Model):
 
     class Meta:
         db_table = 'tipodocumento'
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)  # Corrigindo a chamada para desempacotar args e kwargs
@@ -313,21 +303,43 @@ def default_cargo_id():
 class Hyperlinkpdf(models.Model):
     data_upload = models.DateField()
     caminho = models.CharField(max_length=255)
-    documento = models.ForeignKey('TipoDocumento', on_delete=models.CASCADE)
+    documento = models.ForeignKey('TipoDocumento', on_delete=models.CASCADE, null=True)
     matricula = models.CharField(max_length=255)
     cpf = models.CharField(max_length=255)
     nome_arquivo = models.CharField(max_length=255)
     dta_documento = models.DateField(null=True)
     codigo_documento = models.CharField(max_length=255)
-    empresa = models.ForeignKey('Empresa', on_delete=models.CASCADE, default=default_empresa_id)
-    regional = models.ForeignKey('Regional', on_delete=models.CASCADE, default=default_regional_id)
-    unidade = models.ForeignKey('Unidade', on_delete=models.CASCADE, default=default_unidade_id)
-    colaborador = models.ForeignKey('Colaborador', on_delete=models.CASCADE, default=default_colaborador_id)
-    cargo = models.ForeignKey('Cargo', on_delete=models.CASCADE, default=default_cargo_id)
+    empresa = models.ForeignKey('Empresa', on_delete=models.CASCADE, default=default_empresa_id, null=True)
+    regional = models.ForeignKey('Regional', on_delete=models.CASCADE, default=default_regional_id, null=True)
+    unidade = models.ForeignKey('Unidade', on_delete=models.CASCADE, default=default_unidade_id, null=True)
+    colaborador = models.ForeignKey('Colaborador', on_delete=models.CASCADE, default=default_colaborador_id, null=True)
+    cargo = models.ForeignKey('Cargo', on_delete=models.CASCADE, default=default_cargo_id, null=True)
 
 
     class Meta:
         db_table = 'hyperlinkdocpdf'
+
+    def __str__(self):
+        return self.nome_arquivo
+
+
+class HyperlinkDadosNull(models.Model):
+    data_upload = models.DateField()
+    caminho = models.CharField(max_length=255)
+    documento = models.ForeignKey('TipoDocumento', on_delete=models.CASCADE, null=True)
+    matricula = models.CharField(max_length=255)
+    cpf = models.CharField(max_length=255)
+    nome_arquivo = models.CharField(max_length=255)
+    dta_documento = models.DateField(null=True)
+    codigo_documento = models.CharField(max_length=255)
+    empresa = models.ForeignKey('Empresa', on_delete=models.CASCADE, null=True)
+    regional = models.ForeignKey('Regional', on_delete=models.CASCADE, null=True)
+    unidade = models.ForeignKey('Unidade', on_delete=models.CASCADE, null=True)
+    colaborador = models.ForeignKey('Colaborador', on_delete=models.CASCADE, null=True)
+    cargo = models.ForeignKey('Cargo', on_delete=models.CASCADE, null=True)
+
+    class Meta:
+        db_table = 'hyperlink_dados_null'
 
     def __str__(self):
         return self.nome_arquivo
@@ -377,8 +389,6 @@ class UsuarioManager(BaseUserManager):
 
 class Usuario(AbstractUser):
     telefone = models.CharField(max_length=15, null=True, blank=True)
-
-
     objects = UsuarioManager()
 
     def set_password(self, raw_password):
@@ -409,6 +419,7 @@ class Usuario(AbstractUser):
     )
 
     class Meta:
+        db_table = 'auth_user'
         permissions = (
             ("add_empresa", "Pode adicionar empresas"),
             ("view_empresa_list", "Pode ver a lista de empresas"),
@@ -497,13 +508,13 @@ class PendenteASO(models.Model):
     aso_periodico_existente = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Pendente ASO - {self.tipo_aso.nome} - {self.nome}"
+        return f"Pendente ASO - {self.tipo_aso.nome if self.tipo_aso else 'Desconhecido'} - {self.nome.nome if self.nome else 'Desconhecido'}"
 
 class DomingosFeriados(models.Model):
     loja = models.CharField(max_length=255)
     empresa = models.ForeignKey('Empresa', on_delete=models.CASCADE, null=True)
     regional = models.ForeignKey('Regional', on_delete=models.CASCADE, null=True)
-    data_documento = models.DateField(null=True, blank=True)
+    data_documento = models.CharField(max_length=255, null=True, blank=True)
     nome_documento = models.CharField(max_length=255)
     link_documento = models.CharField(max_length=255)
     data_upload = models.DateField()
@@ -511,6 +522,7 @@ class DomingosFeriados(models.Model):
 
     class Meta:
         db_table = 'domingosferiados'
+
 
     def __str__(self):
         return self.nome_arquivo
@@ -528,8 +540,9 @@ class CartaoPontoInexistente(models.Model):
     existente = models.BooleanField(default=False)
     status = models.ForeignKey('Situacao', on_delete=models.CASCADE, null=True)
 
+
     def __str__(self):
-        return f"Cartão de Ponto Inexistente - {self.data} - {self.colaborador.nome}"
+        return f"Cartão de Ponto Inexistente - {self.data.strftime('%Y-%m-%d') if self.data else 'Data Não Definida'} - {self.colaborador.nome if self.colaborador else 'Colaborador Não Definido'}"
 
 class DocumentoVencido(models.Model):
     empresa = models.ForeignKey('Empresa', on_delete=models.CASCADE, null=True)
@@ -579,11 +592,11 @@ class DocumentoVencido(models.Model):
             precisa_renovar=precisa_renovar
         )
 
-    def __str__(self):
-        return f"{self.colaborador.nome if self.colaborador else 'Desconhecido'} - {self.tipo_documento}"
-
     class Meta:
         db_table = 'documentos_vencidos'
+
+    def __str__(self):
+        return f"{self.colaborador.nome if self.colaborador else 'Desconhecido'} - {self.tipo_documento.nome if self.tipo_documento else 'Documento Desconhecido'}"
 
 
 class RelatorioGerencial(models.Model):
@@ -609,4 +622,23 @@ class RelatorioGerencial(models.Model):
     def str(self):
         return f"Relatório Gerencial - {self.titulo}"
 
+# ***************** PREMISSÕES DE USUÁRIOS ********************
 
+
+User = get_user_model()
+
+class AcessoEmpresa(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+    pode_acessar = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('usuario', 'empresa')
+
+class AcessoUnidade(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE)
+    pode_acessar = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('usuario', 'unidade')
